@@ -11,7 +11,9 @@ import './estilos/global.css';
 
 createRoot(document.getElementById('raiz')).render(
   <React.StrictMode>
-    <BrowserRouter>
+    {/* Se activan por anticipado las banderas de la versión 7 del enrutador
+        para que el proyecto no dependa del comportamiento antiguo. */}
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <App />
     </BrowserRouter>
   </React.StrictMode>,

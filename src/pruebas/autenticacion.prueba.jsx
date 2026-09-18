@@ -97,7 +97,9 @@ describe('ProveedorSesion', () => {
 
 describe('Vista de inicio de sesión', () => {
   const montar = () => render(
-    <MemoryRouter><ProveedorSesion><IniciarSesion /></ProveedorSesion></MemoryRouter>,
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <ProveedorSesion><IniciarSesion /></ProveedorSesion>
+    </MemoryRouter>,
   );
 
   it('no llama a la API si los campos están vacíos', async () => {
