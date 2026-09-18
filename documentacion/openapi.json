@@ -1,0 +1,2384 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API SGSU — Sistema de Gestión de Solicitudes de Servicios",
+    "version": "1.0.0",
+    "description": "Servicios web del proyecto formativo SGSU.\n\nEl sistema permite que un **cliente** registre solicitudes de servicio sobre un catálogo, que un **administrador** las asigne a un **técnico** y que el avance de cada solicitud quede trazado en una bitácora.\n\n**Autenticación.** Salvo el registro, el inicio de sesión y la consulta de estado, todos los servicios exigen un token JWT en el encabezado `Authorization: Bearer <token>`. El token se obtiene en `POST /api/autenticacion/login` y vence a las cuatro horas.\n\n**Formato de las respuestas.** Todas las respuestas son JSON y llevan el campo `exito`. Las respuestas de error traen además `mensaje` y, cuando la falla es de validación, un arreglo `errores` con el detalle campo por campo.\n\nEvidencia GA7-220501096-AA5-EV03 — Edgar Santiago Suarez Alzate, ficha 3186595.",
+    "contact": {
+      "name": "Edgar Santiago Suarez Alzate",
+      "email": "sansu801@gmail.com"
+    },
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Entorno local de desarrollo"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Estado del servicio",
+      "description": "Verificación de disponibilidad de la API."
+    },
+    {
+      "name": "Autenticación",
+      "description": "Registro, inicio de sesión y perfil del usuario."
+    },
+    {
+      "name": "Usuarios",
+      "description": "Gestión de usuarios y roles. Uso exclusivo del administrador."
+    },
+    {
+      "name": "Catálogo de servicios",
+      "description": "Servicios que la empresa ofrece a sus clientes."
+    },
+    {
+      "name": "Solicitudes",
+      "description": "Radicación, asignación, seguimiento y trazabilidad de las solicitudes."
+    },
+    {
+      "name": "Reportes",
+      "description": "Consultas agregadas para el tablero del administrador."
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "tokenBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Token entregado por POST /api/autenticacion/login."
+      }
+    }
+  },
+  "security": [
+    {
+      "tokenBearer": []
+    }
+  ],
+  "paths": {
+    "/api/salud": {
+      "get": {
+        "tags": [
+          "Estado del servicio"
+        ],
+        "summary": "Consultar el estado del servicio",
+        "description": "Comprueba que la API esté operativa. No requiere token y se usa como verificación previa antes de ejecutar las pruebas.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "El servicio está operativo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "servicio": "API SGSU — Sistema de Gestión de Solicitudes de Servicios",
+                  "version": "1.0.0",
+                  "estado": "operativo",
+                  "fechaHora": "2026-09-18T04:44:13.460Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/autenticacion/registro": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Registrar un usuario (cliente)",
+        "description": "Registro público. El usuario siempre se crea con el rol **cliente**: los roles de técnico y administrador solo los asigna un administrador desde `POST /api/usuarios`. La contraseña se almacena cifrada con bcrypt.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "nombreCompleto": "Ana Gómez Rivera",
+                "documento": "1004567890",
+                "correo": "ana.gomez@ejemplo.com",
+                "nombreUsuario": "ana.gomez",
+                "contrasena": "Usuario2026*",
+                "telefono": "3104445566"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Usuario registrado.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "mensaje": "Usuario registrado correctamente.",
+                  "usuario": {
+                    "id": 4,
+                    "nombre_completo": "Ana Gómez Rivera",
+                    "documento": "1004567890",
+                    "correo": "ana.gomez@ejemplo.com",
+                    "nombre_usuario": "ana.gomez",
+                    "telefono": "3104445566",
+                    "id_rol": 3,
+                    "rol": "cliente",
+                    "estado": "activo",
+                    "fecha_registro": "2026-09-17 23:44:10"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Los datos enviados no son válidos.",
+                  "errores": [
+                    "El correo electrónico es obligatorio y debe tener un formato válido."
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Correo, documento o nombre de usuario repetido.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Ya existe un usuario registrado con ese correo electrónico."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/autenticacion/login": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Iniciar sesión",
+        "description": "Recibe usuario y contraseña. Si son correctos devuelve el mensaje de autenticación satisfactoria y un token JWT que debe enviarse en el encabezado `Authorization: Bearer <token>` en el resto de servicios.\n\nCuando el usuario no existe se devuelve el mismo mensaje que cuando la contraseña está equivocada, para no revelar qué cuentas están registradas.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "nombreUsuario": "ana.gomez",
+                "contrasena": "Usuario2026*"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Autenticación satisfactoria.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "mensaje": "Autenticación satisfactoria.",
+                  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                  "expiraEn": "4h",
+                  "usuario": {
+                    "id": 4,
+                    "nombre_completo": "Ana Gómez Rivera",
+                    "documento": "1004567890",
+                    "correo": "ana.gomez@ejemplo.com",
+                    "nombre_usuario": "ana.gomez",
+                    "telefono": "3104445566",
+                    "id_rol": 3,
+                    "rol": "cliente",
+                    "estado": "activo",
+                    "fecha_registro": "2026-09-17 23:44:10"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Faltan el usuario o la contraseña.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Los datos enviados no son válidos.",
+                  "errores": [
+                    "La contraseña es obligatoria."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales incorrectas.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Error en la autenticación: usuario o contraseña incorrectos."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "La cuenta está inactiva.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "La cuenta se encuentra inactiva. Comuníquese con el administrador."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/autenticacion/perfil": {
+      "get": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Consultar el perfil propio",
+        "description": "Devuelve los datos del usuario dueño del token.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Perfil del usuario autenticado.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "usuario": {
+                    "id": 4,
+                    "nombre_completo": "Ana Gómez Rivera",
+                    "documento": "1004567890",
+                    "correo": "ana.gomez@ejemplo.com",
+                    "nombre_usuario": "ana.gomez",
+                    "telefono": "3104445566",
+                    "id_rol": 3,
+                    "rol": "cliente",
+                    "estado": "activo",
+                    "fecha_registro": "2026-09-17 23:44:10"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente, inválido o expirado.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso no autorizado: falta el token de autenticación."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El usuario del token ya no existe.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "El usuario del token ya no existe."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/usuarios": {
+      "get": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Listar usuarios",
+        "description": "Listado paginado con filtros. Solo el administrador puede consultarlo.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "rol",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por rol.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "administrador",
+                "tecnico",
+                "cliente"
+              ]
+            }
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por estado de la cuenta.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "activo",
+                "inactivo"
+              ]
+            }
+          },
+          {
+            "name": "busqueda",
+            "in": "query",
+            "required": false,
+            "description": "Busca en nombre, correo y documento.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "gómez"
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "description": "Número de página; por defecto 1.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          },
+          {
+            "name": "tamano",
+            "in": "query",
+            "required": false,
+            "description": "Registros por página; entre 1 y 100, por defecto 20.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 20
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Listado de usuarios.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "total": 5,
+                  "pagina": 1,
+                  "tamano": 20,
+                  "usuarios": [
+                    {
+                      "id": 4,
+                      "nombre_completo": "Ana Gómez Rivera",
+                      "documento": "1004567890",
+                      "correo": "ana.gomez@ejemplo.com",
+                      "nombre_usuario": "ana.gomez",
+                      "telefono": "3104445566",
+                      "id_rol": 3,
+                      "rol": "cliente",
+                      "estado": "activo",
+                      "fecha_registro": "2026-09-17 23:44:10"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente o inválido.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso no autorizado: falta el token de autenticación."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso denegado: esta operación solo está permitida para el rol administrador."
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Crear un usuario con cualquier rol",
+        "description": "El administrador crea usuarios indicando el rol. Es la única forma de dar de alta técnicos y otros administradores.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "nombreCompleto": "Laura Restrepo Ossa",
+                "documento": "1002345678",
+                "correo": "laura.restrepo@sgsu.co",
+                "nombreUsuario": "laura.tecnico",
+                "contrasena": "Tecnico2026*",
+                "telefono": "3002223344",
+                "rol": "tecnico"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Usuario creado.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "mensaje": "Usuario creado correctamente.",
+                  "usuario": {
+                    "id": 4,
+                    "nombre_completo": "Ana Gómez Rivera",
+                    "documento": "1004567890",
+                    "correo": "ana.gomez@ejemplo.com",
+                    "nombre_usuario": "ana.gomez",
+                    "telefono": "3104445566",
+                    "id_rol": 3,
+                    "rol": "cliente",
+                    "estado": "activo",
+                    "fecha_registro": "2026-09-17 23:44:10"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos o rol no reconocido.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Los datos enviados no son válidos.",
+                  "errores": [
+                    "El rol es obligatorio y debe ser administrador, tecnico o cliente."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente o inválido.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso no autorizado: falta el token de autenticación."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso denegado: esta operación solo está permitida para el rol administrador."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Datos repetidos.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Ya existe un usuario con ese correo, documento o nombre de usuario."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/usuarios/roles": {
+      "get": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Listar los roles del sistema",
+        "description": "Catálogo de roles con su descripción. Sirve para llenar el selector de rol en la interfaz de administración.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Catálogo de roles.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "roles": [
+                    {
+                      "id": 1,
+                      "nombre": "administrador",
+                      "descripcion": "Administra usuarios, catálogo, asignaciones y reportes."
+                    },
+                    {
+                      "id": 2,
+                      "nombre": "tecnico",
+                      "descripcion": "Atiende las solicitudes que le asignan y reporta su avance."
+                    },
+                    {
+                      "id": 3,
+                      "nombre": "cliente",
+                      "descripcion": "Registra solicitudes de servicio y consulta su estado."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso denegado: esta operación solo está permitida para el rol administrador."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/usuarios/{id}": {
+      "get": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Consultar un usuario",
+        "description": "Devuelve un usuario por su identificador.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador del usuario.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usuario encontrado.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "usuario": {
+                    "id": 4,
+                    "nombre_completo": "Ana Gómez Rivera",
+                    "documento": "1004567890",
+                    "correo": "ana.gomez@ejemplo.com",
+                    "nombre_usuario": "ana.gomez",
+                    "telefono": "3104445566",
+                    "id_rol": 3,
+                    "rol": "cliente",
+                    "estado": "activo",
+                    "fecha_registro": "2026-09-17 23:44:10"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso denegado: esta operación solo está permitida para el rol administrador."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "No existe un usuario con ese identificador."
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Actualizar un usuario",
+        "description": "Actualiza nombre, correo, teléfono y rol. El nombre de usuario y la contraseña no se modifican por esta ruta.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador del usuario.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "nombreCompleto": "Ana Gómez Rivera",
+                "documento": "1004567890",
+                "correo": "ana.gomez@ejemplo.com",
+                "telefono": "3104445566",
+                "rol": "cliente"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Usuario actualizado.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "mensaje": "Usuario actualizado correctamente.",
+                  "usuario": {
+                    "id": 4,
+                    "nombre_completo": "Ana Gómez Rivera",
+                    "documento": "1004567890",
+                    "correo": "ana.gomez@ejemplo.com",
+                    "nombre_usuario": "ana.gomez",
+                    "telefono": "3104445566",
+                    "id_rol": 3,
+                    "rol": "cliente",
+                    "estado": "activo",
+                    "fecha_registro": "2026-09-17 23:44:10"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Los datos enviados no son válidos.",
+                  "errores": [
+                    "El documento es obligatorio y debe tener entre 6 y 15 dígitos."
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "No existe un usuario con ese identificador."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Correo o documento ya usados por otro usuario.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Otro usuario ya tiene ese correo o ese documento."
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Eliminar un usuario",
+        "description": "Solo se permite si el usuario no tiene solicitudes asociadas, ni como cliente ni como técnico. En otro caso se debe inactivar la cuenta.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador del usuario.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usuario eliminado.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "mensaje": "Usuario eliminado correctamente.",
+                  "idEliminado": 7
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "No existe un usuario con ese identificador."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Tiene solicitudes asociadas o es la propia cuenta.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "No se puede eliminar: el usuario tiene 3 solicitud(es) asociadas. Inactive la cuenta en lugar de borrarla."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/usuarios/{id}/estado": {
+      "patch": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Activar o inactivar una cuenta",
+        "description": "Cambia el estado de la cuenta. Un usuario inactivo no puede iniciar sesión. El administrador no puede inactivar su propia cuenta.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador del usuario.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "estado": "inactivo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Estado cambiado.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "mensaje": "La cuenta quedó en estado inactivo.",
+                  "usuario": {
+                    "id": 4,
+                    "nombre_completo": "Ana Gómez Rivera",
+                    "documento": "1004567890",
+                    "correo": "ana.gomez@ejemplo.com",
+                    "nombre_usuario": "ana.gomez",
+                    "telefono": "3104445566",
+                    "id_rol": 3,
+                    "rol": "cliente",
+                    "estado": "activo",
+                    "fecha_registro": "2026-09-17 23:44:10"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Estado no válido.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "El estado debe ser activo o inactivo."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "No existe un usuario con ese identificador."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Es la propia cuenta.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Un administrador no puede inactivar su propia cuenta."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/servicios": {
+      "get": {
+        "tags": [
+          "Catálogo de servicios"
+        ],
+        "summary": "Listar el catálogo",
+        "description": "Cualquier usuario autenticado puede consultar el catálogo.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "categoria",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por categoría.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Redes"
+          },
+          {
+            "name": "activo",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por servicios activos o inactivos.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "busqueda",
+            "in": "query",
+            "required": false,
+            "description": "Busca en código, nombre y descripción.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "red"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Catálogo de servicios.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "total": 8,
+                  "servicios": [
+                    {
+                      "id": 2,
+                      "codigo": "SOP-002",
+                      "nombre": "Soporte técnico remoto",
+                      "descripcion": "Atención de fallas de software por conexión remota asistida.",
+                      "categoria": "Soporte",
+                      "precio_base": 60000,
+                      "tiempo_estimado_horas": 1.5,
+                      "activo": 1
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente o inválido.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso no autorizado: falta el token de autenticación."
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Catálogo de servicios"
+        ],
+        "summary": "Crear un servicio",
+        "description": "Solo el administrador. El código debe tener el formato `AAA-000` y ser único.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "codigo": "MTO-001",
+                "nombre": "Mantenimiento preventivo",
+                "descripcion": "Limpieza y revisión general de equipos de cómputo.",
+                "categoria": "Soporte",
+                "precioBase": 150000,
+                "tiempoEstimadoHoras": 2,
+                "activo": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Servicio creado.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "mensaje": "Servicio creado correctamente.",
+                  "servicio": {
+                    "id": 2,
+                    "codigo": "SOP-002",
+                    "nombre": "Soporte técnico remoto",
+                    "descripcion": "Atención de fallas de software por conexión remota asistida.",
+                    "categoria": "Soporte",
+                    "precio_base": 60000,
+                    "tiempo_estimado_horas": 1.5,
+                    "activo": 1
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Los datos enviados no son válidos.",
+                  "errores": [
+                    "El código es obligatorio y debe tener el formato AAA-000 (por ejemplo SOP-001)."
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso denegado: esta operación solo está permitida para el rol administrador."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Código repetido.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Ya existe un servicio con ese código."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/servicios/categorias": {
+      "get": {
+        "tags": [
+          "Catálogo de servicios"
+        ],
+        "summary": "Listar las categorías",
+        "description": "Devuelve las categorías distintas que existen en el catálogo.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Categorías del catálogo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "categorias": [
+                    "Capacitación",
+                    "Desarrollo",
+                    "Redes",
+                    "Seguridad",
+                    "Soporte"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/servicios/{id}": {
+      "get": {
+        "tags": [
+          "Catálogo de servicios"
+        ],
+        "summary": "Consultar un servicio",
+        "description": "Devuelve un servicio del catálogo por su identificador.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador del servicio.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Servicio encontrado.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "servicio": {
+                    "id": 2,
+                    "codigo": "SOP-002",
+                    "nombre": "Soporte técnico remoto",
+                    "descripcion": "Atención de fallas de software por conexión remota asistida.",
+                    "categoria": "Soporte",
+                    "precio_base": 60000,
+                    "tiempo_estimado_horas": 1.5,
+                    "activo": 1
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "No existe un servicio con ese identificador."
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Catálogo de servicios"
+        ],
+        "summary": "Actualizar un servicio",
+        "description": "Reemplaza todos los datos del servicio. Solo el administrador.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador del servicio.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "codigo": "SOP-002",
+                "nombre": "Soporte técnico remoto",
+                "descripcion": "Atención de fallas de software por conexión remota asistida.",
+                "categoria": "Soporte",
+                "precioBase": 65000,
+                "tiempoEstimadoHoras": 1.5,
+                "activo": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Servicio actualizado.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "mensaje": "Servicio actualizado correctamente.",
+                  "servicio": {
+                    "id": 2,
+                    "codigo": "SOP-002",
+                    "nombre": "Soporte técnico remoto",
+                    "descripcion": "Atención de fallas de software por conexión remota asistida.",
+                    "categoria": "Soporte",
+                    "precio_base": 60000,
+                    "tiempo_estimado_horas": 1.5,
+                    "activo": 1
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Los datos enviados no son válidos.",
+                  "errores": [
+                    "El precio base es obligatorio y no puede ser negativo."
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "No existe un servicio con ese identificador."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Código usado por otro servicio.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Otro servicio ya usa ese código."
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Catálogo de servicios"
+        ],
+        "summary": "Eliminar un servicio",
+        "description": "Solo se permite si ninguna solicitud lo usa. En otro caso se debe desactivar con `activo: false`.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador del servicio.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Servicio eliminado.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "mensaje": "Servicio eliminado correctamente.",
+                  "idEliminado": 9
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "No existe un servicio con ese identificador."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El servicio está en uso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "No se puede eliminar: el servicio está usado por 2 solicitud(es). Desactívelo en lugar de borrarlo."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/solicitudes": {
+      "get": {
+        "tags": [
+          "Solicitudes"
+        ],
+        "summary": "Listar solicitudes",
+        "description": "El listado se acota según el rol de quien consulta: el **cliente** ve solo las suyas, el **técnico** solo las que tiene asignadas y el **administrador** las ve todas. Los filtros `idUsuario` e `idTecnico` solo tienen efecto para el administrador.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por estado.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "registrada",
+                "asignada",
+                "en_proceso",
+                "resuelta",
+                "cerrada",
+                "cancelada"
+              ]
+            }
+          },
+          {
+            "name": "prioridad",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por prioridad.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "baja",
+                "media",
+                "alta"
+              ]
+            }
+          },
+          {
+            "name": "idServicio",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por servicio del catálogo.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 2
+          },
+          {
+            "name": "idUsuario",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por cliente (solo administrador).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 4
+          },
+          {
+            "name": "idTecnico",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por técnico (solo administrador).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 2
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "required": false,
+            "description": "Fecha inicial de creación, AAAA-MM-DD.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2026-09-01"
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "required": false,
+            "description": "Fecha final de creación, AAAA-MM-DD.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2026-09-30"
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "description": "Número de página; por defecto 1.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          },
+          {
+            "name": "tamano",
+            "in": "query",
+            "required": false,
+            "description": "Registros por página; entre 1 y 100, por defecto 20.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 20
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Listado de solicitudes.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "total": 3,
+                  "pagina": 1,
+                  "tamano": 20,
+                  "solicitudes": [
+                    {
+                      "id": 4,
+                      "codigo": "SOL-2026-0004",
+                      "descripcion": "No abre el correo corporativo desde el lunes.",
+                      "direccion": "Carrera 45 #12-30, Medellín",
+                      "prioridad": "alta",
+                      "estado": "registrada",
+                      "fecha_creacion": "2026-09-17 23:45:02",
+                      "fecha_programada": null,
+                      "fecha_cierre": null,
+                      "observacion_cierre": null,
+                      "id_usuario": 4,
+                      "cliente": "Ana Gómez Rivera",
+                      "id_servicio": 2,
+                      "servicio": "Soporte técnico remoto",
+                      "categoria": "Soporte",
+                      "precio_base": 60000,
+                      "id_tecnico": null,
+                      "tecnico": null
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente o inválido.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso no autorizado: falta el token de autenticación."
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Solicitudes"
+        ],
+        "summary": "Registrar una solicitud",
+        "description": "Solo el rol **cliente**. El código de la solicitud lo genera la API de forma consecutiva (SOL-AAAA-0000) y el primer movimiento queda registrado en la bitácora automáticamente.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "idServicio": 2,
+                "descripcion": "No abre el correo corporativo desde el lunes.",
+                "direccion": "Carrera 45 #12-30, Medellín",
+                "prioridad": "alta",
+                "fechaProgramada": "2026-09-25"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Solicitud registrada.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "mensaje": "Solicitud registrada correctamente.",
+                  "solicitud": {
+                    "id": 4,
+                    "codigo": "SOL-2026-0004",
+                    "descripcion": "No abre el correo corporativo desde el lunes.",
+                    "direccion": "Carrera 45 #12-30, Medellín",
+                    "prioridad": "alta",
+                    "estado": "registrada",
+                    "fecha_creacion": "2026-09-17 23:45:02",
+                    "fecha_programada": null,
+                    "fecha_cierre": null,
+                    "observacion_cierre": null,
+                    "id_usuario": 4,
+                    "cliente": "Ana Gómez Rivera",
+                    "id_servicio": 2,
+                    "servicio": "Soporte técnico remoto",
+                    "categoria": "Soporte",
+                    "precio_base": 60000,
+                    "id_tecnico": null,
+                    "tecnico": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Los datos enviados no son válidos.",
+                  "errores": [
+                    "La descripción del caso es obligatoria y debe tener al menos 10 caracteres."
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso denegado: esta operación solo está permitida para el rol cliente."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El servicio no existe.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "El servicio indicado no existe en el catálogo."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El servicio está desactivado.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "El servicio indicado está desactivado y no admite solicitudes nuevas."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/solicitudes/{id}": {
+      "get": {
+        "tags": [
+          "Solicitudes"
+        ],
+        "summary": "Consultar una solicitud",
+        "description": "El cliente solo puede consultar las suyas y el técnico las que tiene asignadas; el administrador puede consultar cualquiera.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador de la solicitud.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Solicitud encontrada.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "solicitud": {
+                    "id": 4,
+                    "codigo": "SOL-2026-0004",
+                    "descripcion": "No abre el correo corporativo desde el lunes.",
+                    "direccion": "Carrera 45 #12-30, Medellín",
+                    "prioridad": "alta",
+                    "estado": "registrada",
+                    "fecha_creacion": "2026-09-17 23:45:02",
+                    "fecha_programada": null,
+                    "fecha_cierre": null,
+                    "observacion_cierre": null,
+                    "id_usuario": 4,
+                    "cliente": "Ana Gómez Rivera",
+                    "id_servicio": 2,
+                    "servicio": "Soporte técnico remoto",
+                    "categoria": "Soporte",
+                    "precio_base": 60000,
+                    "id_tecnico": null,
+                    "tecnico": null
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "La solicitud es de otro usuario.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso denegado: esta solicitud no le pertenece."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "No existe una solicitud con ese identificador."
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Solicitudes"
+        ],
+        "summary": "Corregir una solicitud",
+        "description": "El cliente puede corregir su solicitud **solo mientras esté en estado `registrada`**; una vez asignada, los datos quedan congelados.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador de la solicitud.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "idServicio": 2,
+                "descripcion": "Corrijo: no abre el correo ni desde el celular.",
+                "direccion": "Carrera 45 #12-30, oficina 201, Medellín",
+                "prioridad": "media"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Solicitud actualizada.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "mensaje": "Solicitud actualizada correctamente.",
+                  "solicitud": {
+                    "id": 4,
+                    "codigo": "SOL-2026-0004",
+                    "descripcion": "No abre el correo corporativo desde el lunes.",
+                    "direccion": "Carrera 45 #12-30, Medellín",
+                    "prioridad": "alta",
+                    "estado": "registrada",
+                    "fecha_creacion": "2026-09-17 23:45:02",
+                    "fecha_programada": null,
+                    "fecha_cierre": null,
+                    "observacion_cierre": null,
+                    "id_usuario": 4,
+                    "cliente": "Ana Gómez Rivera",
+                    "id_servicio": 2,
+                    "servicio": "Soporte técnico remoto",
+                    "categoria": "Soporte",
+                    "precio_base": 60000,
+                    "id_tecnico": null,
+                    "tecnico": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Los datos enviados no son válidos.",
+                  "errores": [
+                    "La dirección es obligatoria y debe tener al menos 5 caracteres."
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "La solicitud es de otro cliente.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso denegado: esta solicitud no le pertenece."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "No existe una solicitud con ese identificador."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya no está en estado registrada.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Solo se puede editar una solicitud en estado \"registrada\"; esta se encuentra en \"asignada\"."
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Solicitudes"
+        ],
+        "summary": "Eliminar una solicitud",
+        "description": "Borrado físico de la solicitud y de su bitácora. Reservado al administrador.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador de la solicitud.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Solicitud eliminada.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "mensaje": "Solicitud eliminada correctamente junto con su bitácora.",
+                  "idEliminado": 4
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso denegado: esta operación solo está permitida para el rol administrador."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "No existe una solicitud con ese identificador."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/solicitudes/{id}/asignar": {
+      "patch": {
+        "tags": [
+          "Solicitudes"
+        ],
+        "summary": "Asignar un técnico",
+        "description": "El administrador asigna la solicitud a un técnico activo. La solicitud pasa de `registrada` a `asignada` y el movimiento queda en la bitácora.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador de la solicitud.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "idTecnico": 2
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Solicitud asignada.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "mensaje": "Solicitud asignada correctamente.",
+                  "solicitud": {
+                    "id": 4,
+                    "codigo": "SOL-2026-0004",
+                    "descripcion": "No abre el correo corporativo desde el lunes.",
+                    "direccion": "Carrera 45 #12-30, Medellín",
+                    "prioridad": "alta",
+                    "estado": "asignada",
+                    "fecha_creacion": "2026-09-17 23:45:02",
+                    "fecha_programada": null,
+                    "fecha_cierre": null,
+                    "observacion_cierre": null,
+                    "id_usuario": 4,
+                    "cliente": "Ana Gómez Rivera",
+                    "id_servicio": 2,
+                    "servicio": "Soporte técnico remoto",
+                    "categoria": "Soporte",
+                    "precio_base": 60000,
+                    "id_tecnico": 2,
+                    "tecnico": "Laura Restrepo Ossa"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Falta el identificador del técnico.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "El identificador del técnico es obligatorio y debe ser un entero positivo."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso denegado: esta operación solo está permitida para el rol administrador."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "La solicitud o el usuario no existen.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "No existe un usuario con ese identificador."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El usuario no es técnico, está inactivo, o la solicitud no admite asignación.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "El usuario indicado no tiene el rol de técnico."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/solicitudes/{id}/estado": {
+      "patch": {
+        "tags": [
+          "Solicitudes"
+        ],
+        "summary": "Cambiar el estado de una solicitud",
+        "description": "Avanza el estado respetando el flujo definido:\n\n`registrada → asignada → en_proceso → resuelta → cerrada`\n\nDesde cualquier estado abierto se puede pasar a `cancelada`, y desde `resuelta` se puede devolver a `en_proceso` si el trabajo quedó incompleto. El técnico solo puede mover las solicitudes que tiene asignadas y no puede cerrarlas: el cierre lo hace el administrador.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador de la solicitud.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "estado": "en_proceso",
+                "comentario": "Se inicia la revisión remota."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Estado cambiado.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "mensaje": "La solicitud pasó de \"asignada\" a \"en_proceso\".",
+                  "solicitud": {
+                    "id": 4,
+                    "codigo": "SOL-2026-0004",
+                    "descripcion": "No abre el correo corporativo desde el lunes.",
+                    "direccion": "Carrera 45 #12-30, Medellín",
+                    "prioridad": "alta",
+                    "estado": "en_proceso",
+                    "fecha_creacion": "2026-09-17 23:45:02",
+                    "fecha_programada": null,
+                    "fecha_cierre": null,
+                    "observacion_cierre": null,
+                    "id_usuario": 4,
+                    "cliente": "Ana Gómez Rivera",
+                    "id_servicio": 2,
+                    "servicio": "Soporte técnico remoto",
+                    "categoria": "Soporte",
+                    "precio_base": 60000,
+                    "id_tecnico": null,
+                    "tecnico": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Falta el estado nuevo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "El estado nuevo es obligatorio."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No está asignada al técnico, o el técnico intenta cerrarla.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso denegado: esta solicitud no está asignada a usted."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "No existe una solicitud con ese identificador."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Transición no permitida.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "No se puede pasar de \"registrada\" a \"resuelta\". Desde \"registrada\" solo se permite: asignada, cancelada."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/solicitudes/{id}/bitacora": {
+      "get": {
+        "tags": [
+          "Solicitudes"
+        ],
+        "summary": "Consultar la bitácora de una solicitud",
+        "description": "Devuelve la trazabilidad completa: quién hizo cada cambio, de qué estado a cuál, con qué comentario y en qué momento.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador de la solicitud.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bitácora de la solicitud.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "idSolicitud": 4,
+                  "codigo": "SOL-2026-0004",
+                  "total": 2,
+                  "movimientos": [
+                    {
+                      "id": 1,
+                      "estado_anterior": null,
+                      "estado_nuevo": "registrada",
+                      "comentario": "Solicitud creada por el cliente.",
+                      "fecha": "2026-09-17 23:45:02",
+                      "id_usuario": 4,
+                      "usuario": "Ana Gómez Rivera"
+                    },
+                    {
+                      "id": 2,
+                      "estado_anterior": "registrada",
+                      "estado_nuevo": "asignada",
+                      "comentario": "Solicitud asignada al técnico Laura Restrepo Ossa.",
+                      "fecha": "2026-09-17 23:47:20",
+                      "id_usuario": 1,
+                      "usuario": "Edgar Santiago Suarez Alzate"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "La solicitud es de otro usuario.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso denegado: esta solicitud no le pertenece."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "No existe una solicitud con ese identificador."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reportes/solicitudes-por-estado": {
+      "get": {
+        "tags": [
+          "Reportes"
+        ],
+        "summary": "Solicitudes agrupadas por estado",
+        "description": "Devuelve el conteo de solicitudes en cada estado, incluidos los estados que están en cero, para que el tablero no tenga que completarlos.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conteo por estado.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "total": 4,
+                  "porEstado": [
+                    {
+                      "estado": "registrada",
+                      "total": 1
+                    },
+                    {
+                      "estado": "asignada",
+                      "total": 1
+                    },
+                    {
+                      "estado": "en_proceso",
+                      "total": 1
+                    },
+                    {
+                      "estado": "resuelta",
+                      "total": 0
+                    },
+                    {
+                      "estado": "cerrada",
+                      "total": 1
+                    },
+                    {
+                      "estado": "cancelada",
+                      "total": 0
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso denegado: esta operación solo está permitida para el rol administrador."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reportes/servicios-mas-solicitados": {
+      "get": {
+        "tags": [
+          "Reportes"
+        ],
+        "summary": "Servicios más solicitados",
+        "description": "Ranking de servicios por número de solicitudes, con el ingreso estimado según el precio base del catálogo.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "description": "Cuántos servicios devolver; entre 1 y 50, por defecto 10.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 10
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ranking de servicios.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "limite": 10,
+                  "servicios": [
+                    {
+                      "id": 2,
+                      "codigo": "SOP-002",
+                      "nombre": "Soporte técnico remoto",
+                      "categoria": "Soporte",
+                      "total_solicitudes": 2,
+                      "ingreso_estimado": 120000
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso denegado: esta operación solo está permitida para el rol administrador."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reportes/carga-por-tecnico": {
+      "get": {
+        "tags": [
+          "Reportes"
+        ],
+        "summary": "Carga de trabajo por técnico",
+        "description": "Muestra, por cada técnico, cuántas solicitudes tiene asignadas en total, cuántas siguen abiertas y cuántas ya finalizó. Es el insumo para repartir el trabajo del día.",
+        "security": [
+          {
+            "tokenBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Carga por técnico.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": true,
+                  "total": 2,
+                  "tecnicos": [
+                    {
+                      "id": 2,
+                      "tecnico": "Laura Restrepo Ossa",
+                      "total_asignadas": 2,
+                      "abiertas": 2,
+                      "finalizadas": 0
+                    },
+                    {
+                      "id": 3,
+                      "tecnico": "Julián Mejía Cardona",
+                      "total_asignadas": 0,
+                      "abiertas": 0,
+                      "finalizadas": 0
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "exito": false,
+                  "mensaje": "Acceso denegado: esta operación solo está permitida para el rol administrador."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

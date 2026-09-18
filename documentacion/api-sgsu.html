@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API SGSU — Sistema de Gestión de Solicitudes de Servicios — Documentación</title>
+<style>
+* { box-sizing: border-box; }
+body { margin:0; font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+       color:#1c2733; background:#f4f6f9; line-height:1.55; }
+header { background:#0d1b2a; color:#fff; padding:28px 32px; }
+header h1 { margin:0 0 6px; font-size:26px; }
+header .sub { color:#9db4cc; font-size:14px; }
+header .meta { margin-top:14px; font-size:13px; color:#c6d5e4; }
+.contenedor { display:flex; align-items:flex-start; }
+nav { width:310px; flex:0 0 310px; position:sticky; top:0; max-height:100vh;
+      overflow:auto; background:#fff; border-right:1px solid #dde3ea; padding:18px 14px 40px; }
+.nav-grupo { margin-bottom:16px; }
+.nav-titulo { display:block; font-weight:700; font-size:12px; letter-spacing:.06em;
+              text-transform:uppercase; color:#5a6b7d; margin-bottom:6px; }
+nav ul { list-style:none; margin:0; padding:0; }
+nav li a { display:flex; gap:8px; align-items:center; padding:4px 6px; border-radius:5px;
+           color:#26364a; text-decoration:none; font-size:13px; }
+nav li a:hover { background:#eef2f7; }
+main { flex:1; padding:26px 34px 80px; max-width:1000px; }
+.intro { background:#fff; border:1px solid #dde3ea; border-radius:8px; padding:18px 22px;
+         margin-bottom:26px; }
+.intro h2 { margin-top:0; }
+.grupo > h2 { border-bottom:2px solid #1d4e89; padding-bottom:6px; margin-top:34px; }
+.grupo-desc { color:#5a6b7d; margin-top:-4px; }
+.op { background:#fff; border:1px solid #dde3ea; border-radius:8px;
+      padding:16px 20px; margin-bottom:18px; }
+.op-cab { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.op h3 { margin:10px 0 4px; font-size:17px; }
+.met { font-size:11px; font-weight:700; color:#fff; padding:3px 8px; border-radius:4px;
+       letter-spacing:.04em; min-width:56px; text-align:center; display:inline-block; }
+.met-get{background:#1d6f42}.met-post{background:#1d4e89}.met-put{background:#8a6100}
+.met-patch{background:#6b3fa0}.met-delete{background:#8f2018}
+.ruta { font-family: "SFMono-Regular", Consolas, monospace; font-size:14px;
+        background:#eef2f7; padding:3px 8px; border-radius:4px; }
+.candado { font-size:11px; background:#fdf1d6; color:#7a5800; border:1px solid #e8cf9a;
+           padding:2px 7px; border-radius:10px; }
+.libre { font-size:11px; background:#e4f3ea; color:#1d6f42; border:1px solid #a9d6bb;
+         padding:2px 7px; border-radius:10px; }
+.desc p { margin:6px 0; }
+h4 { margin:16px 0 6px; font-size:13px; text-transform:uppercase; letter-spacing:.05em;
+     color:#5a6b7d; }
+.tabla { width:100%; border-collapse:collapse; font-size:13px; }
+.tabla th, .tabla td { border:1px solid #dde3ea; padding:6px 8px; text-align:left;
+                       vertical-align:top; }
+.tabla th { background:#eef2f7; font-size:12px; }
+.tabla p { margin:0; }
+.valores { color:#5a6b7d; font-size:12px; margin-top:3px; }
+pre.json { background:#0d1b2a; color:#e6edf3; padding:12px 14px; border-radius:6px;
+           overflow:auto; font-size:12.5px; margin:6px 0 14px; }
+.resp { display:flex; gap:10px; align-items:center; margin-top:10px; }
+.cod { font-weight:700; font-size:12px; padding:2px 8px; border-radius:4px; color:#fff; }
+.cod-ok { background:#1d6f42; } .cod-err { background:#8f2018; }
+.cod-desc { font-size:13px; color:#33475e; }
+code { background:#eef2f7; padding:1px 5px; border-radius:3px;
+       font-family:"SFMono-Regular", Consolas, monospace; font-size:13px; }
+footer { padding:20px 34px 40px; color:#5a6b7d; font-size:13px; }
+@media (max-width: 900px) { .contenedor{display:block} nav{width:auto;position:static;max-height:none} }
+</style>
+</head>
+<body>
+<header>
+  <h1>API SGSU — Sistema de Gestión de Solicitudes de Servicios</h1>
+  <div class="sub">Documentación de los servicios web · versión 1.0.0</div>
+  <div class="meta">Evidencia GA7-220501096-AA5-EV03 · Edgar Santiago Suarez Alzate · Ficha 3186595 ·
+  Tecnólogo en Análisis y Desarrollo de Software · SENA</div>
+</header>
+<div class="contenedor">
+<nav><div class="nav-grupo"><span class="nav-titulo">Estado del servicio</span><ul><li><a href="#op-get-api-salud"><span class="met met-get">GET</span>Consultar el estado del servicio</a></li></ul></div><div class="nav-grupo"><span class="nav-titulo">Autenticación</span><ul><li><a href="#op-post-api-autenticacion-registro"><span class="met met-post">POST</span>Registrar un usuario (cliente)</a></li><li><a href="#op-post-api-autenticacion-login"><span class="met met-post">POST</span>Iniciar sesión</a></li><li><a href="#op-get-api-autenticacion-perfil"><span class="met met-get">GET</span>Consultar el perfil propio</a></li></ul></div><div class="nav-grupo"><span class="nav-titulo">Usuarios</span><ul><li><a href="#op-get-api-usuarios"><span class="met met-get">GET</span>Listar usuarios</a></li><li><a href="#op-post-api-usuarios"><span class="met met-post">POST</span>Crear un usuario con cualquier rol</a></li><li><a href="#op-get-api-usuarios-roles"><span class="met met-get">GET</span>Listar los roles del sistema</a></li><li><a href="#op-get-api-usuarios-id"><span class="met met-get">GET</span>Consultar un usuario</a></li><li><a href="#op-put-api-usuarios-id"><span class="met met-put">PUT</span>Actualizar un usuario</a></li><li><a href="#op-delete-api-usuarios-id"><span class="met met-delete">DELETE</span>Eliminar un usuario</a></li><li><a href="#op-patch-api-usuarios-id-estado"><span class="met met-patch">PATCH</span>Activar o inactivar una cuenta</a></li></ul></div><div class="nav-grupo"><span class="nav-titulo">Catálogo de servicios</span><ul><li><a href="#op-get-api-servicios"><span class="met met-get">GET</span>Listar el catálogo</a></li><li><a href="#op-post-api-servicios"><span class="met met-post">POST</span>Crear un servicio</a></li><li><a href="#op-get-api-servicios-categorias"><span class="met met-get">GET</span>Listar las categorías</a></li><li><a href="#op-get-api-servicios-id"><span class="met met-get">GET</span>Consultar un servicio</a></li><li><a href="#op-put-api-servicios-id"><span class="met met-put">PUT</span>Actualizar un servicio</a></li><li><a href="#op-delete-api-servicios-id"><span class="met met-delete">DELETE</span>Eliminar un servicio</a></li></ul></div><div class="nav-grupo"><span class="nav-titulo">Solicitudes</span><ul><li><a href="#op-get-api-solicitudes"><span class="met met-get">GET</span>Listar solicitudes</a></li><li><a href="#op-post-api-solicitudes"><span class="met met-post">POST</span>Registrar una solicitud</a></li><li><a href="#op-get-api-solicitudes-id"><span class="met met-get">GET</span>Consultar una solicitud</a></li><li><a href="#op-put-api-solicitudes-id"><span class="met met-put">PUT</span>Corregir una solicitud</a></li><li><a href="#op-delete-api-solicitudes-id"><span class="met met-delete">DELETE</span>Eliminar una solicitud</a></li><li><a href="#op-patch-api-solicitudes-id-asignar"><span class="met met-patch">PATCH</span>Asignar un técnico</a></li><li><a href="#op-patch-api-solicitudes-id-estado"><span class="met met-patch">PATCH</span>Cambiar el estado de una solicitud</a></li><li><a href="#op-get-api-solicitudes-id-bitacora"><span class="met met-get">GET</span>Consultar la bitácora de una solicitud</a></li></ul></div><div class="nav-grupo"><span class="nav-titulo">Reportes</span><ul><li><a href="#op-get-api-reportes-solicitudes-por-estado"><span class="met met-get">GET</span>Solicitudes agrupadas por estado</a></li><li><a href="#op-get-api-reportes-servicios-mas-solicitados"><span class="met met-get">GET</span>Servicios más solicitados</a></li><li><a href="#op-get-api-reportes-carga-por-tecnico"><span class="met met-get">GET</span>Carga de trabajo por técnico</a></li></ul></div></nav>
+<main>
+  <div class="intro">
+    <h2>Cómo usar esta API</h2>
+    <p>Servicios web del proyecto formativo SGSU.</p><p>El sistema permite que un <strong>cliente</strong> registre solicitudes de servicio sobre un catálogo, que un <strong>administrador</strong> las asigne a un <strong>técnico</strong> y que el avance de cada solicitud quede trazado en una bitácora.</p><p><strong>Autenticación.</strong> Salvo el registro, el inicio de sesión y la consulta de estado, todos los servicios exigen un token JWT en el encabezado <code>Authorization: Bearer &lt;token&gt;</code>. El token se obtiene en <code>POST /api/autenticacion/login</code> y vence a las cuatro horas.</p><p><strong>Formato de las respuestas.</strong> Todas las respuestas son JSON y llevan el campo <code>exito</code>. Las respuestas de error traen además <code>mensaje</code> y, cuando la falla es de validación, un arreglo <code>errores</code> con el detalle campo por campo.</p><p>Evidencia GA7-220501096-AA5-EV03 — Edgar Santiago Suarez Alzate, ficha 3186595.</p>
+    <p><strong>Servidor:</strong> <code>http://localhost:3000</code> —
+       Entorno local de desarrollo</p>
+    <p><strong>Total de servicios documentados:</strong> 28 operaciones sobre
+       19 rutas.</p>
+    <p>La especificación en formato OpenAPI 3.0 está disponible en
+       <code>/api/docs/openapi.json</code> y <code>/api/docs/openapi.yaml</code>;
+       se puede importar en Postman, Insomnia o Swagger Editor.</p>
+  </div>
+  <section class="grupo"><h2>Estado del servicio</h2><p class="grupo-desc">Verificación de disponibilidad de la API.</p><article class="op" id="op-get-api-salud"><div class="op-cab"><span class="met met-get">GET</span><code class="ruta">/api/salud</code><span class="libre">público</span></div><h3>Consultar el estado del servicio</h3><div class="desc"><p>Comprueba que la API esté operativa. No requiere token y se usa como verificación previa antes de ejecutar las pruebas.</p></div><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">El servicio está operativo.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;servicio&quot;: &quot;API SGSU — Sistema de Gestión de Solicitudes de Servicios&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;estado&quot;: &quot;operativo&quot;,
+  &quot;fechaHora&quot;: &quot;2026-09-18T04:44:13.460Z&quot;
+}</pre></article></section><section class="grupo"><h2>Autenticación</h2><p class="grupo-desc">Registro, inicio de sesión y perfil del usuario.</p><article class="op" id="op-post-api-autenticacion-registro"><div class="op-cab"><span class="met met-post">POST</span><code class="ruta">/api/autenticacion/registro</code><span class="libre">público</span></div><h3>Registrar un usuario (cliente)</h3><div class="desc"><p>Registro público. El usuario siempre se crea con el rol <strong>cliente</strong>: los roles de técnico y administrador solo los asigna un administrador desde <code>POST /api/usuarios</code>. La contraseña se almacena cifrada con bcrypt.</p></div><h4>Cuerpo de la petición</h4><pre class="json">{
+  &quot;nombreCompleto&quot;: &quot;Ana Gómez Rivera&quot;,
+  &quot;documento&quot;: &quot;1004567890&quot;,
+  &quot;correo&quot;: &quot;ana.gomez@ejemplo.com&quot;,
+  &quot;nombreUsuario&quot;: &quot;ana.gomez&quot;,
+  &quot;contrasena&quot;: &quot;Usuario2026*&quot;,
+  &quot;telefono&quot;: &quot;3104445566&quot;
+}</pre><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">201</span><span class="cod-desc">Usuario registrado.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;mensaje&quot;: &quot;Usuario registrado correctamente.&quot;,
+  &quot;usuario&quot;: {
+    &quot;id&quot;: 4,
+    &quot;nombre_completo&quot;: &quot;Ana Gómez Rivera&quot;,
+    &quot;documento&quot;: &quot;1004567890&quot;,
+    &quot;correo&quot;: &quot;ana.gomez@ejemplo.com&quot;,
+    &quot;nombre_usuario&quot;: &quot;ana.gomez&quot;,
+    &quot;telefono&quot;: &quot;3104445566&quot;,
+    &quot;id_rol&quot;: 3,
+    &quot;rol&quot;: &quot;cliente&quot;,
+    &quot;estado&quot;: &quot;activo&quot;,
+    &quot;fecha_registro&quot;: &quot;2026-09-17 23:44:10&quot;
+  }
+}</pre><div class="resp"><span class="cod cod-err">400</span><span class="cod-desc">Datos inválidos.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Los datos enviados no son válidos.&quot;,
+  &quot;errores&quot;: [
+    &quot;El correo electrónico es obligatorio y debe tener un formato válido.&quot;
+  ]
+}</pre><div class="resp"><span class="cod cod-err">409</span><span class="cod-desc">Correo, documento o nombre de usuario repetido.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Ya existe un usuario registrado con ese correo electrónico.&quot;
+}</pre></article><article class="op" id="op-post-api-autenticacion-login"><div class="op-cab"><span class="met met-post">POST</span><code class="ruta">/api/autenticacion/login</code><span class="libre">público</span></div><h3>Iniciar sesión</h3><div class="desc"><p>Recibe usuario y contraseña. Si son correctos devuelve el mensaje de autenticación satisfactoria y un token JWT que debe enviarse en el encabezado <code>Authorization: Bearer &lt;token&gt;</code> en el resto de servicios.</p><p>Cuando el usuario no existe se devuelve el mismo mensaje que cuando la contraseña está equivocada, para no revelar qué cuentas están registradas.</p></div><h4>Cuerpo de la petición</h4><pre class="json">{
+  &quot;nombreUsuario&quot;: &quot;ana.gomez&quot;,
+  &quot;contrasena&quot;: &quot;Usuario2026*&quot;
+}</pre><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Autenticación satisfactoria.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;mensaje&quot;: &quot;Autenticación satisfactoria.&quot;,
+  &quot;token&quot;: &quot;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...&quot;,
+  &quot;expiraEn&quot;: &quot;4h&quot;,
+  &quot;usuario&quot;: {
+    &quot;id&quot;: 4,
+    &quot;nombre_completo&quot;: &quot;Ana Gómez Rivera&quot;,
+    &quot;documento&quot;: &quot;1004567890&quot;,
+    &quot;correo&quot;: &quot;ana.gomez@ejemplo.com&quot;,
+    &quot;nombre_usuario&quot;: &quot;ana.gomez&quot;,
+    &quot;telefono&quot;: &quot;3104445566&quot;,
+    &quot;id_rol&quot;: 3,
+    &quot;rol&quot;: &quot;cliente&quot;,
+    &quot;estado&quot;: &quot;activo&quot;,
+    &quot;fecha_registro&quot;: &quot;2026-09-17 23:44:10&quot;
+  }
+}</pre><div class="resp"><span class="cod cod-err">400</span><span class="cod-desc">Faltan el usuario o la contraseña.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Los datos enviados no son válidos.&quot;,
+  &quot;errores&quot;: [
+    &quot;La contraseña es obligatoria.&quot;
+  ]
+}</pre><div class="resp"><span class="cod cod-err">401</span><span class="cod-desc">Credenciales incorrectas.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Error en la autenticación: usuario o contraseña incorrectos.&quot;
+}</pre><div class="resp"><span class="cod cod-err">403</span><span class="cod-desc">La cuenta está inactiva.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;La cuenta se encuentra inactiva. Comuníquese con el administrador.&quot;
+}</pre></article><article class="op" id="op-get-api-autenticacion-perfil"><div class="op-cab"><span class="met met-get">GET</span><code class="ruta">/api/autenticacion/perfil</code><span class="candado" title="Requiere token">token</span></div><h3>Consultar el perfil propio</h3><div class="desc"><p>Devuelve los datos del usuario dueño del token.</p></div><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Perfil del usuario autenticado.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;usuario&quot;: {
+    &quot;id&quot;: 4,
+    &quot;nombre_completo&quot;: &quot;Ana Gómez Rivera&quot;,
+    &quot;documento&quot;: &quot;1004567890&quot;,
+    &quot;correo&quot;: &quot;ana.gomez@ejemplo.com&quot;,
+    &quot;nombre_usuario&quot;: &quot;ana.gomez&quot;,
+    &quot;telefono&quot;: &quot;3104445566&quot;,
+    &quot;id_rol&quot;: 3,
+    &quot;rol&quot;: &quot;cliente&quot;,
+    &quot;estado&quot;: &quot;activo&quot;,
+    &quot;fecha_registro&quot;: &quot;2026-09-17 23:44:10&quot;
+  }
+}</pre><div class="resp"><span class="cod cod-err">401</span><span class="cod-desc">Token ausente, inválido o expirado.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso no autorizado: falta el token de autenticación.&quot;
+}</pre><div class="resp"><span class="cod cod-err">404</span><span class="cod-desc">El usuario del token ya no existe.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;El usuario del token ya no existe.&quot;
+}</pre></article></section><section class="grupo"><h2>Usuarios</h2><p class="grupo-desc">Gestión de usuarios y roles. Uso exclusivo del administrador.</p><article class="op" id="op-get-api-usuarios"><div class="op-cab"><span class="met met-get">GET</span><code class="ruta">/api/usuarios</code><span class="candado" title="Requiere token">token</span></div><h3>Listar usuarios</h3><div class="desc"><p>Listado paginado con filtros. Solo el administrador puede consultarlo.</p></div><h4>Parámetros</h4><table class="tabla"><thead><tr><th>Nombre</th><th>Ubicación</th><th>Tipo</th><th>Obligatorio</th><th>Descripción</th></tr></thead><tbody><tr><td><code>rol</code></td><td>query</td><td>string</td><td>no</td><td><p>Filtra por rol.</p><div class="valores">valores: administrador, tecnico, cliente</div></td></tr><tr><td><code>estado</code></td><td>query</td><td>string</td><td>no</td><td><p>Filtra por estado de la cuenta.</p><div class="valores">valores: activo, inactivo</div></td></tr><tr><td><code>busqueda</code></td><td>query</td><td>string</td><td>no</td><td><p>Busca en nombre, correo y documento.</p></td></tr><tr><td><code>pagina</code></td><td>query</td><td>integer</td><td>no</td><td><p>Número de página; por defecto 1.</p></td></tr><tr><td><code>tamano</code></td><td>query</td><td>integer</td><td>no</td><td><p>Registros por página; entre 1 y 100, por defecto 20.</p></td></tr></tbody></table><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Listado de usuarios.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;total&quot;: 5,
+  &quot;pagina&quot;: 1,
+  &quot;tamano&quot;: 20,
+  &quot;usuarios&quot;: [
+    {
+      &quot;id&quot;: 4,
+      &quot;nombre_completo&quot;: &quot;Ana Gómez Rivera&quot;,
+      &quot;documento&quot;: &quot;1004567890&quot;,
+      &quot;correo&quot;: &quot;ana.gomez@ejemplo.com&quot;,
+      &quot;nombre_usuario&quot;: &quot;ana.gomez&quot;,
+      &quot;telefono&quot;: &quot;3104445566&quot;,
+      &quot;id_rol&quot;: 3,
+      &quot;rol&quot;: &quot;cliente&quot;,
+      &quot;estado&quot;: &quot;activo&quot;,
+      &quot;fecha_registro&quot;: &quot;2026-09-17 23:44:10&quot;
+    }
+  ]
+}</pre><div class="resp"><span class="cod cod-err">401</span><span class="cod-desc">Token ausente o inválido.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso no autorizado: falta el token de autenticación.&quot;
+}</pre><div class="resp"><span class="cod cod-err">403</span><span class="cod-desc">El rol no tiene permiso.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso denegado: esta operación solo está permitida para el rol administrador.&quot;
+}</pre></article><article class="op" id="op-post-api-usuarios"><div class="op-cab"><span class="met met-post">POST</span><code class="ruta">/api/usuarios</code><span class="candado" title="Requiere token">token</span></div><h3>Crear un usuario con cualquier rol</h3><div class="desc"><p>El administrador crea usuarios indicando el rol. Es la única forma de dar de alta técnicos y otros administradores.</p></div><h4>Cuerpo de la petición</h4><pre class="json">{
+  &quot;nombreCompleto&quot;: &quot;Laura Restrepo Ossa&quot;,
+  &quot;documento&quot;: &quot;1002345678&quot;,
+  &quot;correo&quot;: &quot;laura.restrepo@sgsu.co&quot;,
+  &quot;nombreUsuario&quot;: &quot;laura.tecnico&quot;,
+  &quot;contrasena&quot;: &quot;Tecnico2026*&quot;,
+  &quot;telefono&quot;: &quot;3002223344&quot;,
+  &quot;rol&quot;: &quot;tecnico&quot;
+}</pre><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">201</span><span class="cod-desc">Usuario creado.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;mensaje&quot;: &quot;Usuario creado correctamente.&quot;,
+  &quot;usuario&quot;: {
+    &quot;id&quot;: 4,
+    &quot;nombre_completo&quot;: &quot;Ana Gómez Rivera&quot;,
+    &quot;documento&quot;: &quot;1004567890&quot;,
+    &quot;correo&quot;: &quot;ana.gomez@ejemplo.com&quot;,
+    &quot;nombre_usuario&quot;: &quot;ana.gomez&quot;,
+    &quot;telefono&quot;: &quot;3104445566&quot;,
+    &quot;id_rol&quot;: 3,
+    &quot;rol&quot;: &quot;cliente&quot;,
+    &quot;estado&quot;: &quot;activo&quot;,
+    &quot;fecha_registro&quot;: &quot;2026-09-17 23:44:10&quot;
+  }
+}</pre><div class="resp"><span class="cod cod-err">400</span><span class="cod-desc">Datos inválidos o rol no reconocido.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Los datos enviados no son válidos.&quot;,
+  &quot;errores&quot;: [
+    &quot;El rol es obligatorio y debe ser administrador, tecnico o cliente.&quot;
+  ]
+}</pre><div class="resp"><span class="cod cod-err">401</span><span class="cod-desc">Token ausente o inválido.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso no autorizado: falta el token de autenticación.&quot;
+}</pre><div class="resp"><span class="cod cod-err">403</span><span class="cod-desc">El rol no tiene permiso.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso denegado: esta operación solo está permitida para el rol administrador.&quot;
+}</pre><div class="resp"><span class="cod cod-err">409</span><span class="cod-desc">Datos repetidos.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Ya existe un usuario con ese correo, documento o nombre de usuario.&quot;
+}</pre></article><article class="op" id="op-get-api-usuarios-roles"><div class="op-cab"><span class="met met-get">GET</span><code class="ruta">/api/usuarios/roles</code><span class="candado" title="Requiere token">token</span></div><h3>Listar los roles del sistema</h3><div class="desc"><p>Catálogo de roles con su descripción. Sirve para llenar el selector de rol en la interfaz de administración.</p></div><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Catálogo de roles.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;roles&quot;: [
+    {
+      &quot;id&quot;: 1,
+      &quot;nombre&quot;: &quot;administrador&quot;,
+      &quot;descripcion&quot;: &quot;Administra usuarios, catálogo, asignaciones y reportes.&quot;
+    },
+    {
+      &quot;id&quot;: 2,
+      &quot;nombre&quot;: &quot;tecnico&quot;,
+      &quot;descripcion&quot;: &quot;Atiende las solicitudes que le asignan y reporta su avance.&quot;
+    },
+    {
+      &quot;id&quot;: 3,
+      &quot;nombre&quot;: &quot;cliente&quot;,
+      &quot;descripcion&quot;: &quot;Registra solicitudes de servicio y consulta su estado.&quot;
+    }
+  ]
+}</pre><div class="resp"><span class="cod cod-err">403</span><span class="cod-desc">El rol no tiene permiso.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso denegado: esta operación solo está permitida para el rol administrador.&quot;
+}</pre></article><article class="op" id="op-get-api-usuarios-id"><div class="op-cab"><span class="met met-get">GET</span><code class="ruta">/api/usuarios/{id}</code><span class="candado" title="Requiere token">token</span></div><h3>Consultar un usuario</h3><div class="desc"><p>Devuelve un usuario por su identificador.</p></div><h4>Parámetros</h4><table class="tabla"><thead><tr><th>Nombre</th><th>Ubicación</th><th>Tipo</th><th>Obligatorio</th><th>Descripción</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>integer</td><td>sí</td><td><p>Identificador del usuario.</p></td></tr></tbody></table><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Usuario encontrado.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;usuario&quot;: {
+    &quot;id&quot;: 4,
+    &quot;nombre_completo&quot;: &quot;Ana Gómez Rivera&quot;,
+    &quot;documento&quot;: &quot;1004567890&quot;,
+    &quot;correo&quot;: &quot;ana.gomez@ejemplo.com&quot;,
+    &quot;nombre_usuario&quot;: &quot;ana.gomez&quot;,
+    &quot;telefono&quot;: &quot;3104445566&quot;,
+    &quot;id_rol&quot;: 3,
+    &quot;rol&quot;: &quot;cliente&quot;,
+    &quot;estado&quot;: &quot;activo&quot;,
+    &quot;fecha_registro&quot;: &quot;2026-09-17 23:44:10&quot;
+  }
+}</pre><div class="resp"><span class="cod cod-err">403</span><span class="cod-desc">El rol no tiene permiso.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso denegado: esta operación solo está permitida para el rol administrador.&quot;
+}</pre><div class="resp"><span class="cod cod-err">404</span><span class="cod-desc">No existe.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;No existe un usuario con ese identificador.&quot;
+}</pre></article><article class="op" id="op-put-api-usuarios-id"><div class="op-cab"><span class="met met-put">PUT</span><code class="ruta">/api/usuarios/{id}</code><span class="candado" title="Requiere token">token</span></div><h3>Actualizar un usuario</h3><div class="desc"><p>Actualiza nombre, correo, teléfono y rol. El nombre de usuario y la contraseña no se modifican por esta ruta.</p></div><h4>Parámetros</h4><table class="tabla"><thead><tr><th>Nombre</th><th>Ubicación</th><th>Tipo</th><th>Obligatorio</th><th>Descripción</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>integer</td><td>sí</td><td><p>Identificador del usuario.</p></td></tr></tbody></table><h4>Cuerpo de la petición</h4><pre class="json">{
+  &quot;nombreCompleto&quot;: &quot;Ana Gómez Rivera&quot;,
+  &quot;documento&quot;: &quot;1004567890&quot;,
+  &quot;correo&quot;: &quot;ana.gomez@ejemplo.com&quot;,
+  &quot;telefono&quot;: &quot;3104445566&quot;,
+  &quot;rol&quot;: &quot;cliente&quot;
+}</pre><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Usuario actualizado.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;mensaje&quot;: &quot;Usuario actualizado correctamente.&quot;,
+  &quot;usuario&quot;: {
+    &quot;id&quot;: 4,
+    &quot;nombre_completo&quot;: &quot;Ana Gómez Rivera&quot;,
+    &quot;documento&quot;: &quot;1004567890&quot;,
+    &quot;correo&quot;: &quot;ana.gomez@ejemplo.com&quot;,
+    &quot;nombre_usuario&quot;: &quot;ana.gomez&quot;,
+    &quot;telefono&quot;: &quot;3104445566&quot;,
+    &quot;id_rol&quot;: 3,
+    &quot;rol&quot;: &quot;cliente&quot;,
+    &quot;estado&quot;: &quot;activo&quot;,
+    &quot;fecha_registro&quot;: &quot;2026-09-17 23:44:10&quot;
+  }
+}</pre><div class="resp"><span class="cod cod-err">400</span><span class="cod-desc">Datos inválidos.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Los datos enviados no son válidos.&quot;,
+  &quot;errores&quot;: [
+    &quot;El documento es obligatorio y debe tener entre 6 y 15 dígitos.&quot;
+  ]
+}</pre><div class="resp"><span class="cod cod-err">404</span><span class="cod-desc">No existe.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;No existe un usuario con ese identificador.&quot;
+}</pre><div class="resp"><span class="cod cod-err">409</span><span class="cod-desc">Correo o documento ya usados por otro usuario.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Otro usuario ya tiene ese correo o ese documento.&quot;
+}</pre></article><article class="op" id="op-delete-api-usuarios-id"><div class="op-cab"><span class="met met-delete">DELETE</span><code class="ruta">/api/usuarios/{id}</code><span class="candado" title="Requiere token">token</span></div><h3>Eliminar un usuario</h3><div class="desc"><p>Solo se permite si el usuario no tiene solicitudes asociadas, ni como cliente ni como técnico. En otro caso se debe inactivar la cuenta.</p></div><h4>Parámetros</h4><table class="tabla"><thead><tr><th>Nombre</th><th>Ubicación</th><th>Tipo</th><th>Obligatorio</th><th>Descripción</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>integer</td><td>sí</td><td><p>Identificador del usuario.</p></td></tr></tbody></table><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Usuario eliminado.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;mensaje&quot;: &quot;Usuario eliminado correctamente.&quot;,
+  &quot;idEliminado&quot;: 7
+}</pre><div class="resp"><span class="cod cod-err">404</span><span class="cod-desc">No existe.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;No existe un usuario con ese identificador.&quot;
+}</pre><div class="resp"><span class="cod cod-err">409</span><span class="cod-desc">Tiene solicitudes asociadas o es la propia cuenta.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;No se puede eliminar: el usuario tiene 3 solicitud(es) asociadas. Inactive la cuenta en lugar de borrarla.&quot;
+}</pre></article><article class="op" id="op-patch-api-usuarios-id-estado"><div class="op-cab"><span class="met met-patch">PATCH</span><code class="ruta">/api/usuarios/{id}/estado</code><span class="candado" title="Requiere token">token</span></div><h3>Activar o inactivar una cuenta</h3><div class="desc"><p>Cambia el estado de la cuenta. Un usuario inactivo no puede iniciar sesión. El administrador no puede inactivar su propia cuenta.</p></div><h4>Parámetros</h4><table class="tabla"><thead><tr><th>Nombre</th><th>Ubicación</th><th>Tipo</th><th>Obligatorio</th><th>Descripción</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>integer</td><td>sí</td><td><p>Identificador del usuario.</p></td></tr></tbody></table><h4>Cuerpo de la petición</h4><pre class="json">{
+  &quot;estado&quot;: &quot;inactivo&quot;
+}</pre><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Estado cambiado.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;mensaje&quot;: &quot;La cuenta quedó en estado inactivo.&quot;,
+  &quot;usuario&quot;: {
+    &quot;id&quot;: 4,
+    &quot;nombre_completo&quot;: &quot;Ana Gómez Rivera&quot;,
+    &quot;documento&quot;: &quot;1004567890&quot;,
+    &quot;correo&quot;: &quot;ana.gomez@ejemplo.com&quot;,
+    &quot;nombre_usuario&quot;: &quot;ana.gomez&quot;,
+    &quot;telefono&quot;: &quot;3104445566&quot;,
+    &quot;id_rol&quot;: 3,
+    &quot;rol&quot;: &quot;cliente&quot;,
+    &quot;estado&quot;: &quot;activo&quot;,
+    &quot;fecha_registro&quot;: &quot;2026-09-17 23:44:10&quot;
+  }
+}</pre><div class="resp"><span class="cod cod-err">400</span><span class="cod-desc">Estado no válido.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;El estado debe ser activo o inactivo.&quot;
+}</pre><div class="resp"><span class="cod cod-err">404</span><span class="cod-desc">No existe.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;No existe un usuario con ese identificador.&quot;
+}</pre><div class="resp"><span class="cod cod-err">409</span><span class="cod-desc">Es la propia cuenta.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Un administrador no puede inactivar su propia cuenta.&quot;
+}</pre></article></section><section class="grupo"><h2>Catálogo de servicios</h2><p class="grupo-desc">Servicios que la empresa ofrece a sus clientes.</p><article class="op" id="op-get-api-servicios"><div class="op-cab"><span class="met met-get">GET</span><code class="ruta">/api/servicios</code><span class="candado" title="Requiere token">token</span></div><h3>Listar el catálogo</h3><div class="desc"><p>Cualquier usuario autenticado puede consultar el catálogo.</p></div><h4>Parámetros</h4><table class="tabla"><thead><tr><th>Nombre</th><th>Ubicación</th><th>Tipo</th><th>Obligatorio</th><th>Descripción</th></tr></thead><tbody><tr><td><code>categoria</code></td><td>query</td><td>string</td><td>no</td><td><p>Filtra por categoría.</p></td></tr><tr><td><code>activo</code></td><td>query</td><td>string</td><td>no</td><td><p>Filtra por servicios activos o inactivos.</p><div class="valores">valores: true, false</div></td></tr><tr><td><code>busqueda</code></td><td>query</td><td>string</td><td>no</td><td><p>Busca en código, nombre y descripción.</p></td></tr></tbody></table><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Catálogo de servicios.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;total&quot;: 8,
+  &quot;servicios&quot;: [
+    {
+      &quot;id&quot;: 2,
+      &quot;codigo&quot;: &quot;SOP-002&quot;,
+      &quot;nombre&quot;: &quot;Soporte técnico remoto&quot;,
+      &quot;descripcion&quot;: &quot;Atención de fallas de software por conexión remota asistida.&quot;,
+      &quot;categoria&quot;: &quot;Soporte&quot;,
+      &quot;precio_base&quot;: 60000,
+      &quot;tiempo_estimado_horas&quot;: 1.5,
+      &quot;activo&quot;: 1
+    }
+  ]
+}</pre><div class="resp"><span class="cod cod-err">401</span><span class="cod-desc">Token ausente o inválido.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso no autorizado: falta el token de autenticación.&quot;
+}</pre></article><article class="op" id="op-post-api-servicios"><div class="op-cab"><span class="met met-post">POST</span><code class="ruta">/api/servicios</code><span class="candado" title="Requiere token">token</span></div><h3>Crear un servicio</h3><div class="desc"><p>Solo el administrador. El código debe tener el formato <code>AAA-000</code> y ser único.</p></div><h4>Cuerpo de la petición</h4><pre class="json">{
+  &quot;codigo&quot;: &quot;MTO-001&quot;,
+  &quot;nombre&quot;: &quot;Mantenimiento preventivo&quot;,
+  &quot;descripcion&quot;: &quot;Limpieza y revisión general de equipos de cómputo.&quot;,
+  &quot;categoria&quot;: &quot;Soporte&quot;,
+  &quot;precioBase&quot;: 150000,
+  &quot;tiempoEstimadoHoras&quot;: 2,
+  &quot;activo&quot;: true
+}</pre><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">201</span><span class="cod-desc">Servicio creado.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;mensaje&quot;: &quot;Servicio creado correctamente.&quot;,
+  &quot;servicio&quot;: {
+    &quot;id&quot;: 2,
+    &quot;codigo&quot;: &quot;SOP-002&quot;,
+    &quot;nombre&quot;: &quot;Soporte técnico remoto&quot;,
+    &quot;descripcion&quot;: &quot;Atención de fallas de software por conexión remota asistida.&quot;,
+    &quot;categoria&quot;: &quot;Soporte&quot;,
+    &quot;precio_base&quot;: 60000,
+    &quot;tiempo_estimado_horas&quot;: 1.5,
+    &quot;activo&quot;: 1
+  }
+}</pre><div class="resp"><span class="cod cod-err">400</span><span class="cod-desc">Datos inválidos.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Los datos enviados no son válidos.&quot;,
+  &quot;errores&quot;: [
+    &quot;El código es obligatorio y debe tener el formato AAA-000 (por ejemplo SOP-001).&quot;
+  ]
+}</pre><div class="resp"><span class="cod cod-err">403</span><span class="cod-desc">El rol no tiene permiso.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso denegado: esta operación solo está permitida para el rol administrador.&quot;
+}</pre><div class="resp"><span class="cod cod-err">409</span><span class="cod-desc">Código repetido.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Ya existe un servicio con ese código.&quot;
+}</pre></article><article class="op" id="op-get-api-servicios-categorias"><div class="op-cab"><span class="met met-get">GET</span><code class="ruta">/api/servicios/categorias</code><span class="candado" title="Requiere token">token</span></div><h3>Listar las categorías</h3><div class="desc"><p>Devuelve las categorías distintas que existen en el catálogo.</p></div><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Categorías del catálogo.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;categorias&quot;: [
+    &quot;Capacitación&quot;,
+    &quot;Desarrollo&quot;,
+    &quot;Redes&quot;,
+    &quot;Seguridad&quot;,
+    &quot;Soporte&quot;
+  ]
+}</pre></article><article class="op" id="op-get-api-servicios-id"><div class="op-cab"><span class="met met-get">GET</span><code class="ruta">/api/servicios/{id}</code><span class="candado" title="Requiere token">token</span></div><h3>Consultar un servicio</h3><div class="desc"><p>Devuelve un servicio del catálogo por su identificador.</p></div><h4>Parámetros</h4><table class="tabla"><thead><tr><th>Nombre</th><th>Ubicación</th><th>Tipo</th><th>Obligatorio</th><th>Descripción</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>integer</td><td>sí</td><td><p>Identificador del servicio.</p></td></tr></tbody></table><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Servicio encontrado.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;servicio&quot;: {
+    &quot;id&quot;: 2,
+    &quot;codigo&quot;: &quot;SOP-002&quot;,
+    &quot;nombre&quot;: &quot;Soporte técnico remoto&quot;,
+    &quot;descripcion&quot;: &quot;Atención de fallas de software por conexión remota asistida.&quot;,
+    &quot;categoria&quot;: &quot;Soporte&quot;,
+    &quot;precio_base&quot;: 60000,
+    &quot;tiempo_estimado_horas&quot;: 1.5,
+    &quot;activo&quot;: 1
+  }
+}</pre><div class="resp"><span class="cod cod-err">404</span><span class="cod-desc">No existe.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;No existe un servicio con ese identificador.&quot;
+}</pre></article><article class="op" id="op-put-api-servicios-id"><div class="op-cab"><span class="met met-put">PUT</span><code class="ruta">/api/servicios/{id}</code><span class="candado" title="Requiere token">token</span></div><h3>Actualizar un servicio</h3><div class="desc"><p>Reemplaza todos los datos del servicio. Solo el administrador.</p></div><h4>Parámetros</h4><table class="tabla"><thead><tr><th>Nombre</th><th>Ubicación</th><th>Tipo</th><th>Obligatorio</th><th>Descripción</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>integer</td><td>sí</td><td><p>Identificador del servicio.</p></td></tr></tbody></table><h4>Cuerpo de la petición</h4><pre class="json">{
+  &quot;codigo&quot;: &quot;SOP-002&quot;,
+  &quot;nombre&quot;: &quot;Soporte técnico remoto&quot;,
+  &quot;descripcion&quot;: &quot;Atención de fallas de software por conexión remota asistida.&quot;,
+  &quot;categoria&quot;: &quot;Soporte&quot;,
+  &quot;precioBase&quot;: 65000,
+  &quot;tiempoEstimadoHoras&quot;: 1.5,
+  &quot;activo&quot;: true
+}</pre><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Servicio actualizado.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;mensaje&quot;: &quot;Servicio actualizado correctamente.&quot;,
+  &quot;servicio&quot;: {
+    &quot;id&quot;: 2,
+    &quot;codigo&quot;: &quot;SOP-002&quot;,
+    &quot;nombre&quot;: &quot;Soporte técnico remoto&quot;,
+    &quot;descripcion&quot;: &quot;Atención de fallas de software por conexión remota asistida.&quot;,
+    &quot;categoria&quot;: &quot;Soporte&quot;,
+    &quot;precio_base&quot;: 60000,
+    &quot;tiempo_estimado_horas&quot;: 1.5,
+    &quot;activo&quot;: 1
+  }
+}</pre><div class="resp"><span class="cod cod-err">400</span><span class="cod-desc">Datos inválidos.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Los datos enviados no son válidos.&quot;,
+  &quot;errores&quot;: [
+    &quot;El precio base es obligatorio y no puede ser negativo.&quot;
+  ]
+}</pre><div class="resp"><span class="cod cod-err">404</span><span class="cod-desc">No existe.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;No existe un servicio con ese identificador.&quot;
+}</pre><div class="resp"><span class="cod cod-err">409</span><span class="cod-desc">Código usado por otro servicio.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Otro servicio ya usa ese código.&quot;
+}</pre></article><article class="op" id="op-delete-api-servicios-id"><div class="op-cab"><span class="met met-delete">DELETE</span><code class="ruta">/api/servicios/{id}</code><span class="candado" title="Requiere token">token</span></div><h3>Eliminar un servicio</h3><div class="desc"><p>Solo se permite si ninguna solicitud lo usa. En otro caso se debe desactivar con <code>activo: false</code>.</p></div><h4>Parámetros</h4><table class="tabla"><thead><tr><th>Nombre</th><th>Ubicación</th><th>Tipo</th><th>Obligatorio</th><th>Descripción</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>integer</td><td>sí</td><td><p>Identificador del servicio.</p></td></tr></tbody></table><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Servicio eliminado.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;mensaje&quot;: &quot;Servicio eliminado correctamente.&quot;,
+  &quot;idEliminado&quot;: 9
+}</pre><div class="resp"><span class="cod cod-err">404</span><span class="cod-desc">No existe.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;No existe un servicio con ese identificador.&quot;
+}</pre><div class="resp"><span class="cod cod-err">409</span><span class="cod-desc">El servicio está en uso.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;No se puede eliminar: el servicio está usado por 2 solicitud(es). Desactívelo en lugar de borrarlo.&quot;
+}</pre></article></section><section class="grupo"><h2>Solicitudes</h2><p class="grupo-desc">Radicación, asignación, seguimiento y trazabilidad de las solicitudes.</p><article class="op" id="op-get-api-solicitudes"><div class="op-cab"><span class="met met-get">GET</span><code class="ruta">/api/solicitudes</code><span class="candado" title="Requiere token">token</span></div><h3>Listar solicitudes</h3><div class="desc"><p>El listado se acota según el rol de quien consulta: el <strong>cliente</strong> ve solo las suyas, el <strong>técnico</strong> solo las que tiene asignadas y el <strong>administrador</strong> las ve todas. Los filtros <code>idUsuario</code> e <code>idTecnico</code> solo tienen efecto para el administrador.</p></div><h4>Parámetros</h4><table class="tabla"><thead><tr><th>Nombre</th><th>Ubicación</th><th>Tipo</th><th>Obligatorio</th><th>Descripción</th></tr></thead><tbody><tr><td><code>estado</code></td><td>query</td><td>string</td><td>no</td><td><p>Filtra por estado.</p><div class="valores">valores: registrada, asignada, en_proceso, resuelta, cerrada, cancelada</div></td></tr><tr><td><code>prioridad</code></td><td>query</td><td>string</td><td>no</td><td><p>Filtra por prioridad.</p><div class="valores">valores: baja, media, alta</div></td></tr><tr><td><code>idServicio</code></td><td>query</td><td>integer</td><td>no</td><td><p>Filtra por servicio del catálogo.</p></td></tr><tr><td><code>idUsuario</code></td><td>query</td><td>integer</td><td>no</td><td><p>Filtra por cliente (solo administrador).</p></td></tr><tr><td><code>idTecnico</code></td><td>query</td><td>integer</td><td>no</td><td><p>Filtra por técnico (solo administrador).</p></td></tr><tr><td><code>desde</code></td><td>query</td><td>string</td><td>no</td><td><p>Fecha inicial de creación, AAAA-MM-DD.</p></td></tr><tr><td><code>hasta</code></td><td>query</td><td>string</td><td>no</td><td><p>Fecha final de creación, AAAA-MM-DD.</p></td></tr><tr><td><code>pagina</code></td><td>query</td><td>integer</td><td>no</td><td><p>Número de página; por defecto 1.</p></td></tr><tr><td><code>tamano</code></td><td>query</td><td>integer</td><td>no</td><td><p>Registros por página; entre 1 y 100, por defecto 20.</p></td></tr></tbody></table><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Listado de solicitudes.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;total&quot;: 3,
+  &quot;pagina&quot;: 1,
+  &quot;tamano&quot;: 20,
+  &quot;solicitudes&quot;: [
+    {
+      &quot;id&quot;: 4,
+      &quot;codigo&quot;: &quot;SOL-2026-0004&quot;,
+      &quot;descripcion&quot;: &quot;No abre el correo corporativo desde el lunes.&quot;,
+      &quot;direccion&quot;: &quot;Carrera 45 #12-30, Medellín&quot;,
+      &quot;prioridad&quot;: &quot;alta&quot;,
+      &quot;estado&quot;: &quot;registrada&quot;,
+      &quot;fecha_creacion&quot;: &quot;2026-09-17 23:45:02&quot;,
+      &quot;fecha_programada&quot;: null,
+      &quot;fecha_cierre&quot;: null,
+      &quot;observacion_cierre&quot;: null,
+      &quot;id_usuario&quot;: 4,
+      &quot;cliente&quot;: &quot;Ana Gómez Rivera&quot;,
+      &quot;id_servicio&quot;: 2,
+      &quot;servicio&quot;: &quot;Soporte técnico remoto&quot;,
+      &quot;categoria&quot;: &quot;Soporte&quot;,
+      &quot;precio_base&quot;: 60000,
+      &quot;id_tecnico&quot;: null,
+      &quot;tecnico&quot;: null
+    }
+  ]
+}</pre><div class="resp"><span class="cod cod-err">401</span><span class="cod-desc">Token ausente o inválido.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso no autorizado: falta el token de autenticación.&quot;
+}</pre></article><article class="op" id="op-post-api-solicitudes"><div class="op-cab"><span class="met met-post">POST</span><code class="ruta">/api/solicitudes</code><span class="candado" title="Requiere token">token</span></div><h3>Registrar una solicitud</h3><div class="desc"><p>Solo el rol <strong>cliente</strong>. El código de la solicitud lo genera la API de forma consecutiva (SOL-AAAA-0000) y el primer movimiento queda registrado en la bitácora automáticamente.</p></div><h4>Cuerpo de la petición</h4><pre class="json">{
+  &quot;idServicio&quot;: 2,
+  &quot;descripcion&quot;: &quot;No abre el correo corporativo desde el lunes.&quot;,
+  &quot;direccion&quot;: &quot;Carrera 45 #12-30, Medellín&quot;,
+  &quot;prioridad&quot;: &quot;alta&quot;,
+  &quot;fechaProgramada&quot;: &quot;2026-09-25&quot;
+}</pre><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">201</span><span class="cod-desc">Solicitud registrada.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;mensaje&quot;: &quot;Solicitud registrada correctamente.&quot;,
+  &quot;solicitud&quot;: {
+    &quot;id&quot;: 4,
+    &quot;codigo&quot;: &quot;SOL-2026-0004&quot;,
+    &quot;descripcion&quot;: &quot;No abre el correo corporativo desde el lunes.&quot;,
+    &quot;direccion&quot;: &quot;Carrera 45 #12-30, Medellín&quot;,
+    &quot;prioridad&quot;: &quot;alta&quot;,
+    &quot;estado&quot;: &quot;registrada&quot;,
+    &quot;fecha_creacion&quot;: &quot;2026-09-17 23:45:02&quot;,
+    &quot;fecha_programada&quot;: null,
+    &quot;fecha_cierre&quot;: null,
+    &quot;observacion_cierre&quot;: null,
+    &quot;id_usuario&quot;: 4,
+    &quot;cliente&quot;: &quot;Ana Gómez Rivera&quot;,
+    &quot;id_servicio&quot;: 2,
+    &quot;servicio&quot;: &quot;Soporte técnico remoto&quot;,
+    &quot;categoria&quot;: &quot;Soporte&quot;,
+    &quot;precio_base&quot;: 60000,
+    &quot;id_tecnico&quot;: null,
+    &quot;tecnico&quot;: null
+  }
+}</pre><div class="resp"><span class="cod cod-err">400</span><span class="cod-desc">Datos inválidos.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Los datos enviados no son válidos.&quot;,
+  &quot;errores&quot;: [
+    &quot;La descripción del caso es obligatoria y debe tener al menos 10 caracteres.&quot;
+  ]
+}</pre><div class="resp"><span class="cod cod-err">403</span><span class="cod-desc">El rol no tiene permiso.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso denegado: esta operación solo está permitida para el rol cliente.&quot;
+}</pre><div class="resp"><span class="cod cod-err">404</span><span class="cod-desc">El servicio no existe.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;El servicio indicado no existe en el catálogo.&quot;
+}</pre><div class="resp"><span class="cod cod-err">409</span><span class="cod-desc">El servicio está desactivado.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;El servicio indicado está desactivado y no admite solicitudes nuevas.&quot;
+}</pre></article><article class="op" id="op-get-api-solicitudes-id"><div class="op-cab"><span class="met met-get">GET</span><code class="ruta">/api/solicitudes/{id}</code><span class="candado" title="Requiere token">token</span></div><h3>Consultar una solicitud</h3><div class="desc"><p>El cliente solo puede consultar las suyas y el técnico las que tiene asignadas; el administrador puede consultar cualquiera.</p></div><h4>Parámetros</h4><table class="tabla"><thead><tr><th>Nombre</th><th>Ubicación</th><th>Tipo</th><th>Obligatorio</th><th>Descripción</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>integer</td><td>sí</td><td><p>Identificador de la solicitud.</p></td></tr></tbody></table><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Solicitud encontrada.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;solicitud&quot;: {
+    &quot;id&quot;: 4,
+    &quot;codigo&quot;: &quot;SOL-2026-0004&quot;,
+    &quot;descripcion&quot;: &quot;No abre el correo corporativo desde el lunes.&quot;,
+    &quot;direccion&quot;: &quot;Carrera 45 #12-30, Medellín&quot;,
+    &quot;prioridad&quot;: &quot;alta&quot;,
+    &quot;estado&quot;: &quot;registrada&quot;,
+    &quot;fecha_creacion&quot;: &quot;2026-09-17 23:45:02&quot;,
+    &quot;fecha_programada&quot;: null,
+    &quot;fecha_cierre&quot;: null,
+    &quot;observacion_cierre&quot;: null,
+    &quot;id_usuario&quot;: 4,
+    &quot;cliente&quot;: &quot;Ana Gómez Rivera&quot;,
+    &quot;id_servicio&quot;: 2,
+    &quot;servicio&quot;: &quot;Soporte técnico remoto&quot;,
+    &quot;categoria&quot;: &quot;Soporte&quot;,
+    &quot;precio_base&quot;: 60000,
+    &quot;id_tecnico&quot;: null,
+    &quot;tecnico&quot;: null
+  }
+}</pre><div class="resp"><span class="cod cod-err">403</span><span class="cod-desc">La solicitud es de otro usuario.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso denegado: esta solicitud no le pertenece.&quot;
+}</pre><div class="resp"><span class="cod cod-err">404</span><span class="cod-desc">No existe.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;No existe una solicitud con ese identificador.&quot;
+}</pre></article><article class="op" id="op-put-api-solicitudes-id"><div class="op-cab"><span class="met met-put">PUT</span><code class="ruta">/api/solicitudes/{id}</code><span class="candado" title="Requiere token">token</span></div><h3>Corregir una solicitud</h3><div class="desc"><p>El cliente puede corregir su solicitud <strong>solo mientras esté en estado <code>registrada</code></strong>; una vez asignada, los datos quedan congelados.</p></div><h4>Parámetros</h4><table class="tabla"><thead><tr><th>Nombre</th><th>Ubicación</th><th>Tipo</th><th>Obligatorio</th><th>Descripción</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>integer</td><td>sí</td><td><p>Identificador de la solicitud.</p></td></tr></tbody></table><h4>Cuerpo de la petición</h4><pre class="json">{
+  &quot;idServicio&quot;: 2,
+  &quot;descripcion&quot;: &quot;Corrijo: no abre el correo ni desde el celular.&quot;,
+  &quot;direccion&quot;: &quot;Carrera 45 #12-30, oficina 201, Medellín&quot;,
+  &quot;prioridad&quot;: &quot;media&quot;
+}</pre><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Solicitud actualizada.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;mensaje&quot;: &quot;Solicitud actualizada correctamente.&quot;,
+  &quot;solicitud&quot;: {
+    &quot;id&quot;: 4,
+    &quot;codigo&quot;: &quot;SOL-2026-0004&quot;,
+    &quot;descripcion&quot;: &quot;No abre el correo corporativo desde el lunes.&quot;,
+    &quot;direccion&quot;: &quot;Carrera 45 #12-30, Medellín&quot;,
+    &quot;prioridad&quot;: &quot;alta&quot;,
+    &quot;estado&quot;: &quot;registrada&quot;,
+    &quot;fecha_creacion&quot;: &quot;2026-09-17 23:45:02&quot;,
+    &quot;fecha_programada&quot;: null,
+    &quot;fecha_cierre&quot;: null,
+    &quot;observacion_cierre&quot;: null,
+    &quot;id_usuario&quot;: 4,
+    &quot;cliente&quot;: &quot;Ana Gómez Rivera&quot;,
+    &quot;id_servicio&quot;: 2,
+    &quot;servicio&quot;: &quot;Soporte técnico remoto&quot;,
+    &quot;categoria&quot;: &quot;Soporte&quot;,
+    &quot;precio_base&quot;: 60000,
+    &quot;id_tecnico&quot;: null,
+    &quot;tecnico&quot;: null
+  }
+}</pre><div class="resp"><span class="cod cod-err">400</span><span class="cod-desc">Datos inválidos.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Los datos enviados no son válidos.&quot;,
+  &quot;errores&quot;: [
+    &quot;La dirección es obligatoria y debe tener al menos 5 caracteres.&quot;
+  ]
+}</pre><div class="resp"><span class="cod cod-err">403</span><span class="cod-desc">La solicitud es de otro cliente.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso denegado: esta solicitud no le pertenece.&quot;
+}</pre><div class="resp"><span class="cod cod-err">404</span><span class="cod-desc">No existe.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;No existe una solicitud con ese identificador.&quot;
+}</pre><div class="resp"><span class="cod cod-err">409</span><span class="cod-desc">Ya no está en estado registrada.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Solo se puede editar una solicitud en estado \&quot;registrada\&quot;; esta se encuentra en \&quot;asignada\&quot;.&quot;
+}</pre></article><article class="op" id="op-delete-api-solicitudes-id"><div class="op-cab"><span class="met met-delete">DELETE</span><code class="ruta">/api/solicitudes/{id}</code><span class="candado" title="Requiere token">token</span></div><h3>Eliminar una solicitud</h3><div class="desc"><p>Borrado físico de la solicitud y de su bitácora. Reservado al administrador.</p></div><h4>Parámetros</h4><table class="tabla"><thead><tr><th>Nombre</th><th>Ubicación</th><th>Tipo</th><th>Obligatorio</th><th>Descripción</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>integer</td><td>sí</td><td><p>Identificador de la solicitud.</p></td></tr></tbody></table><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Solicitud eliminada.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;mensaje&quot;: &quot;Solicitud eliminada correctamente junto con su bitácora.&quot;,
+  &quot;idEliminado&quot;: 4
+}</pre><div class="resp"><span class="cod cod-err">403</span><span class="cod-desc">El rol no tiene permiso.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso denegado: esta operación solo está permitida para el rol administrador.&quot;
+}</pre><div class="resp"><span class="cod cod-err">404</span><span class="cod-desc">No existe.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;No existe una solicitud con ese identificador.&quot;
+}</pre></article><article class="op" id="op-patch-api-solicitudes-id-asignar"><div class="op-cab"><span class="met met-patch">PATCH</span><code class="ruta">/api/solicitudes/{id}/asignar</code><span class="candado" title="Requiere token">token</span></div><h3>Asignar un técnico</h3><div class="desc"><p>El administrador asigna la solicitud a un técnico activo. La solicitud pasa de <code>registrada</code> a <code>asignada</code> y el movimiento queda en la bitácora.</p></div><h4>Parámetros</h4><table class="tabla"><thead><tr><th>Nombre</th><th>Ubicación</th><th>Tipo</th><th>Obligatorio</th><th>Descripción</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>integer</td><td>sí</td><td><p>Identificador de la solicitud.</p></td></tr></tbody></table><h4>Cuerpo de la petición</h4><pre class="json">{
+  &quot;idTecnico&quot;: 2
+}</pre><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Solicitud asignada.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;mensaje&quot;: &quot;Solicitud asignada correctamente.&quot;,
+  &quot;solicitud&quot;: {
+    &quot;id&quot;: 4,
+    &quot;codigo&quot;: &quot;SOL-2026-0004&quot;,
+    &quot;descripcion&quot;: &quot;No abre el correo corporativo desde el lunes.&quot;,
+    &quot;direccion&quot;: &quot;Carrera 45 #12-30, Medellín&quot;,
+    &quot;prioridad&quot;: &quot;alta&quot;,
+    &quot;estado&quot;: &quot;asignada&quot;,
+    &quot;fecha_creacion&quot;: &quot;2026-09-17 23:45:02&quot;,
+    &quot;fecha_programada&quot;: null,
+    &quot;fecha_cierre&quot;: null,
+    &quot;observacion_cierre&quot;: null,
+    &quot;id_usuario&quot;: 4,
+    &quot;cliente&quot;: &quot;Ana Gómez Rivera&quot;,
+    &quot;id_servicio&quot;: 2,
+    &quot;servicio&quot;: &quot;Soporte técnico remoto&quot;,
+    &quot;categoria&quot;: &quot;Soporte&quot;,
+    &quot;precio_base&quot;: 60000,
+    &quot;id_tecnico&quot;: 2,
+    &quot;tecnico&quot;: &quot;Laura Restrepo Ossa&quot;
+  }
+}</pre><div class="resp"><span class="cod cod-err">400</span><span class="cod-desc">Falta el identificador del técnico.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;El identificador del técnico es obligatorio y debe ser un entero positivo.&quot;
+}</pre><div class="resp"><span class="cod cod-err">403</span><span class="cod-desc">El rol no tiene permiso.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso denegado: esta operación solo está permitida para el rol administrador.&quot;
+}</pre><div class="resp"><span class="cod cod-err">404</span><span class="cod-desc">La solicitud o el usuario no existen.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;No existe un usuario con ese identificador.&quot;
+}</pre><div class="resp"><span class="cod cod-err">409</span><span class="cod-desc">El usuario no es técnico, está inactivo, o la solicitud no admite asignación.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;El usuario indicado no tiene el rol de técnico.&quot;
+}</pre></article><article class="op" id="op-patch-api-solicitudes-id-estado"><div class="op-cab"><span class="met met-patch">PATCH</span><code class="ruta">/api/solicitudes/{id}/estado</code><span class="candado" title="Requiere token">token</span></div><h3>Cambiar el estado de una solicitud</h3><div class="desc"><p>Avanza el estado respetando el flujo definido:</p><p><code>registrada → asignada → en_proceso → resuelta → cerrada</code></p><p>Desde cualquier estado abierto se puede pasar a <code>cancelada</code>, y desde <code>resuelta</code> se puede devolver a <code>en_proceso</code> si el trabajo quedó incompleto. El técnico solo puede mover las solicitudes que tiene asignadas y no puede cerrarlas: el cierre lo hace el administrador.</p></div><h4>Parámetros</h4><table class="tabla"><thead><tr><th>Nombre</th><th>Ubicación</th><th>Tipo</th><th>Obligatorio</th><th>Descripción</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>integer</td><td>sí</td><td><p>Identificador de la solicitud.</p></td></tr></tbody></table><h4>Cuerpo de la petición</h4><pre class="json">{
+  &quot;estado&quot;: &quot;en_proceso&quot;,
+  &quot;comentario&quot;: &quot;Se inicia la revisión remota.&quot;
+}</pre><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Estado cambiado.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;mensaje&quot;: &quot;La solicitud pasó de \&quot;asignada\&quot; a \&quot;en_proceso\&quot;.&quot;,
+  &quot;solicitud&quot;: {
+    &quot;id&quot;: 4,
+    &quot;codigo&quot;: &quot;SOL-2026-0004&quot;,
+    &quot;descripcion&quot;: &quot;No abre el correo corporativo desde el lunes.&quot;,
+    &quot;direccion&quot;: &quot;Carrera 45 #12-30, Medellín&quot;,
+    &quot;prioridad&quot;: &quot;alta&quot;,
+    &quot;estado&quot;: &quot;en_proceso&quot;,
+    &quot;fecha_creacion&quot;: &quot;2026-09-17 23:45:02&quot;,
+    &quot;fecha_programada&quot;: null,
+    &quot;fecha_cierre&quot;: null,
+    &quot;observacion_cierre&quot;: null,
+    &quot;id_usuario&quot;: 4,
+    &quot;cliente&quot;: &quot;Ana Gómez Rivera&quot;,
+    &quot;id_servicio&quot;: 2,
+    &quot;servicio&quot;: &quot;Soporte técnico remoto&quot;,
+    &quot;categoria&quot;: &quot;Soporte&quot;,
+    &quot;precio_base&quot;: 60000,
+    &quot;id_tecnico&quot;: null,
+    &quot;tecnico&quot;: null
+  }
+}</pre><div class="resp"><span class="cod cod-err">400</span><span class="cod-desc">Falta el estado nuevo.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;El estado nuevo es obligatorio.&quot;
+}</pre><div class="resp"><span class="cod cod-err">403</span><span class="cod-desc">No está asignada al técnico, o el técnico intenta cerrarla.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso denegado: esta solicitud no está asignada a usted.&quot;
+}</pre><div class="resp"><span class="cod cod-err">404</span><span class="cod-desc">No existe.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;No existe una solicitud con ese identificador.&quot;
+}</pre><div class="resp"><span class="cod cod-err">409</span><span class="cod-desc">Transición no permitida.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;No se puede pasar de \&quot;registrada\&quot; a \&quot;resuelta\&quot;. Desde \&quot;registrada\&quot; solo se permite: asignada, cancelada.&quot;
+}</pre></article><article class="op" id="op-get-api-solicitudes-id-bitacora"><div class="op-cab"><span class="met met-get">GET</span><code class="ruta">/api/solicitudes/{id}/bitacora</code><span class="candado" title="Requiere token">token</span></div><h3>Consultar la bitácora de una solicitud</h3><div class="desc"><p>Devuelve la trazabilidad completa: quién hizo cada cambio, de qué estado a cuál, con qué comentario y en qué momento.</p></div><h4>Parámetros</h4><table class="tabla"><thead><tr><th>Nombre</th><th>Ubicación</th><th>Tipo</th><th>Obligatorio</th><th>Descripción</th></tr></thead><tbody><tr><td><code>id</code></td><td>path</td><td>integer</td><td>sí</td><td><p>Identificador de la solicitud.</p></td></tr></tbody></table><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Bitácora de la solicitud.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;idSolicitud&quot;: 4,
+  &quot;codigo&quot;: &quot;SOL-2026-0004&quot;,
+  &quot;total&quot;: 2,
+  &quot;movimientos&quot;: [
+    {
+      &quot;id&quot;: 1,
+      &quot;estado_anterior&quot;: null,
+      &quot;estado_nuevo&quot;: &quot;registrada&quot;,
+      &quot;comentario&quot;: &quot;Solicitud creada por el cliente.&quot;,
+      &quot;fecha&quot;: &quot;2026-09-17 23:45:02&quot;,
+      &quot;id_usuario&quot;: 4,
+      &quot;usuario&quot;: &quot;Ana Gómez Rivera&quot;
+    },
+    {
+      &quot;id&quot;: 2,
+      &quot;estado_anterior&quot;: &quot;registrada&quot;,
+      &quot;estado_nuevo&quot;: &quot;asignada&quot;,
+      &quot;comentario&quot;: &quot;Solicitud asignada al técnico Laura Restrepo Ossa.&quot;,
+      &quot;fecha&quot;: &quot;2026-09-17 23:47:20&quot;,
+      &quot;id_usuario&quot;: 1,
+      &quot;usuario&quot;: &quot;Edgar Santiago Suarez Alzate&quot;
+    }
+  ]
+}</pre><div class="resp"><span class="cod cod-err">403</span><span class="cod-desc">La solicitud es de otro usuario.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso denegado: esta solicitud no le pertenece.&quot;
+}</pre><div class="resp"><span class="cod cod-err">404</span><span class="cod-desc">No existe.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;No existe una solicitud con ese identificador.&quot;
+}</pre></article></section><section class="grupo"><h2>Reportes</h2><p class="grupo-desc">Consultas agregadas para el tablero del administrador.</p><article class="op" id="op-get-api-reportes-solicitudes-por-estado"><div class="op-cab"><span class="met met-get">GET</span><code class="ruta">/api/reportes/solicitudes-por-estado</code><span class="candado" title="Requiere token">token</span></div><h3>Solicitudes agrupadas por estado</h3><div class="desc"><p>Devuelve el conteo de solicitudes en cada estado, incluidos los estados que están en cero, para que el tablero no tenga que completarlos.</p></div><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Conteo por estado.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;total&quot;: 4,
+  &quot;porEstado&quot;: [
+    {
+      &quot;estado&quot;: &quot;registrada&quot;,
+      &quot;total&quot;: 1
+    },
+    {
+      &quot;estado&quot;: &quot;asignada&quot;,
+      &quot;total&quot;: 1
+    },
+    {
+      &quot;estado&quot;: &quot;en_proceso&quot;,
+      &quot;total&quot;: 1
+    },
+    {
+      &quot;estado&quot;: &quot;resuelta&quot;,
+      &quot;total&quot;: 0
+    },
+    {
+      &quot;estado&quot;: &quot;cerrada&quot;,
+      &quot;total&quot;: 1
+    },
+    {
+      &quot;estado&quot;: &quot;cancelada&quot;,
+      &quot;total&quot;: 0
+    }
+  ]
+}</pre><div class="resp"><span class="cod cod-err">403</span><span class="cod-desc">El rol no tiene permiso.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso denegado: esta operación solo está permitida para el rol administrador.&quot;
+}</pre></article><article class="op" id="op-get-api-reportes-servicios-mas-solicitados"><div class="op-cab"><span class="met met-get">GET</span><code class="ruta">/api/reportes/servicios-mas-solicitados</code><span class="candado" title="Requiere token">token</span></div><h3>Servicios más solicitados</h3><div class="desc"><p>Ranking de servicios por número de solicitudes, con el ingreso estimado según el precio base del catálogo.</p></div><h4>Parámetros</h4><table class="tabla"><thead><tr><th>Nombre</th><th>Ubicación</th><th>Tipo</th><th>Obligatorio</th><th>Descripción</th></tr></thead><tbody><tr><td><code>limite</code></td><td>query</td><td>integer</td><td>no</td><td><p>Cuántos servicios devolver; entre 1 y 50, por defecto 10.</p></td></tr></tbody></table><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Ranking de servicios.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;limite&quot;: 10,
+  &quot;servicios&quot;: [
+    {
+      &quot;id&quot;: 2,
+      &quot;codigo&quot;: &quot;SOP-002&quot;,
+      &quot;nombre&quot;: &quot;Soporte técnico remoto&quot;,
+      &quot;categoria&quot;: &quot;Soporte&quot;,
+      &quot;total_solicitudes&quot;: 2,
+      &quot;ingreso_estimado&quot;: 120000
+    }
+  ]
+}</pre><div class="resp"><span class="cod cod-err">403</span><span class="cod-desc">El rol no tiene permiso.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso denegado: esta operación solo está permitida para el rol administrador.&quot;
+}</pre></article><article class="op" id="op-get-api-reportes-carga-por-tecnico"><div class="op-cab"><span class="met met-get">GET</span><code class="ruta">/api/reportes/carga-por-tecnico</code><span class="candado" title="Requiere token">token</span></div><h3>Carga de trabajo por técnico</h3><div class="desc"><p>Muestra, por cada técnico, cuántas solicitudes tiene asignadas en total, cuántas siguen abiertas y cuántas ya finalizó. Es el insumo para repartir el trabajo del día.</p></div><h4>Respuestas</h4><div class="resp"><span class="cod cod-ok">200</span><span class="cod-desc">Carga por técnico.</span></div><pre class="json">{
+  &quot;exito&quot;: true,
+  &quot;total&quot;: 2,
+  &quot;tecnicos&quot;: [
+    {
+      &quot;id&quot;: 2,
+      &quot;tecnico&quot;: &quot;Laura Restrepo Ossa&quot;,
+      &quot;total_asignadas&quot;: 2,
+      &quot;abiertas&quot;: 2,
+      &quot;finalizadas&quot;: 0
+    },
+    {
+      &quot;id&quot;: 3,
+      &quot;tecnico&quot;: &quot;Julián Mejía Cardona&quot;,
+      &quot;total_asignadas&quot;: 0,
+      &quot;abiertas&quot;: 0,
+      &quot;finalizadas&quot;: 0
+    }
+  ]
+}</pre><div class="resp"><span class="cod cod-err">403</span><span class="cod-desc">El rol no tiene permiso.</span></div><pre class="json">{
+  &quot;exito&quot;: false,
+  &quot;mensaje&quot;: &quot;Acceso denegado: esta operación solo está permitida para el rol administrador.&quot;
+}</pre></article></section>
+</main>
+</div>
+<footer>API SGSU 1.0.0 · Documentación generada a partir de la especificación OpenAPI del proyecto.</footer>
+</body>
+</html>
