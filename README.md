@@ -61,7 +61,21 @@ todas las rutas son relativas y no hay que configurar CORS.
 ```bash
 npm run prueba       # ejecuta la suite completa una vez
 npm run prueba:ver   # queda observando los archivos
+npm run prueba:servidor  # pruebas de la API con node:test (versión 1.2)
+npm run prueba:e2e   # pruebas de extremo a extremo con Playwright
+npm run prueba:api   # colección de Postman con Newman (necesita la API en el puerto 3000)
 ```
+
+## Cambios de la versión 1.2
+
+- **Inicio de sesión sin bloquear el servidor (NF-01).** bcrypt se ejecuta en un grupo de
+  hilos de trabajo (`servidor/utilidades/contrasenas.js`); el hilo principal sigue atendiendo
+  las demás peticiones mientras se comparan contraseñas.
+- **Límite de intentos (NF-02).** Después de 5 intentos fallidos con el mismo usuario desde la
+  misma IP, el inicio de sesión responde 429 durante 15 minutos (`servidor/middleware/limiteIntentos.js`).
+- **Sello de integridad de la bitácora (NF-03).** `POST /api/bitacora/sellos` guarda el hash
+  SHA-256 de los movimientos de un día encadenado con el sello anterior, y
+  `GET /api/bitacora/verificacion` dice si la bitácora sigue íntegra. Solo administrador.
 
 ## Compilar
 
@@ -93,6 +107,9 @@ no corresponden a personas reales.
 | `LLAVE_SECRETA`    | Llave con la que se firman los tokens JWT           | valor de desarrollo |
 | `DURACION_TOKEN`   | Vigencia del token                                  | `4h`              |
 | `MODO_PRUEBAS`     | En `1` reinicia y vuelve a sembrar la base de datos | sin definir       |
+| `LIMITE_INTENTOS`  | Intentos fallidos antes del bloqueo (v1.2)          | `5`               |
+| `VENTANA_INTENTOS_MS` | Duración del bloqueo en milisegundos (v1.2)      | `900000`          |
+| `REGISTRO_PETICIONES` | En `0` no escribe cada petición en la consola    | sin definir       |
 
 ## Licencia
 

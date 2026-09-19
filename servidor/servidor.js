@@ -18,16 +18,23 @@ const usuarioRutas = require('./rutas/usuarioRutas');
 const servicioRutas = require('./rutas/servicioRutas');
 const solicitudRutas = require('./rutas/solicitudRutas');
 const reporteRutas = require('./rutas/reporteRutas');
+const bitacoraRutas = require('./rutas/bitacoraRutas');
 const { rutaNoEncontrada, manejadorErrores } = require('./middleware/manejadorErrores');
 
 const aplicacion = express();
 const PUERTO = process.env.PUERTO || 3000;
 const CARPETA_DOCS = path.join(__dirname, '..', 'documentacion');
 
+// Versión 1.2: detrás del proxy de Vercel la IP real del cliente llega en
+// X-Forwarded-For. Sin esto todas las peticiones tendrían la IP del proxy y el
+// límite de intentos (NF-02) bloquearía a todos por igual.
+aplicacion.set('trust proxy', 1);
+
 aplicacion.use(express.json({ limit: '1mb' }));
 
 // Registro de cada petición: ayuda a seguir lo que pasa durante las pruebas.
 aplicacion.use((peticion, respuesta, siguiente) => {
+  if (process.env.REGISTRO_PETICIONES === '0') return siguiente();
   const marca = new Date().toISOString().slice(11, 19);
   console.log(`[${marca}] ${peticion.method} ${peticion.originalUrl}`);
   siguiente();
@@ -38,7 +45,7 @@ aplicacion.get('/api/salud', (peticion, respuesta) => {
   respuesta.status(200).json({
     exito: true,
     servicio: 'API SGSU — Sistema de Gestión de Solicitudes de Servicios',
-    version: '1.0.0',
+    version: '1.2.0',
     estado: 'operativo',
     fechaHora: new Date().toISOString(),
   });
@@ -58,6 +65,7 @@ aplicacion.use('/api/usuarios', usuarioRutas);
 aplicacion.use('/api/servicios', servicioRutas);
 aplicacion.use('/api/solicitudes', solicitudRutas);
 aplicacion.use('/api/reportes', reporteRutas);
+aplicacion.use('/api/bitacora', bitacoraRutas);
 
 // Aplicación web compilada. Si existe la carpeta dist (después de npm run
 // build), este mismo servidor la entrega, y el sistema completo corre en un
@@ -99,6 +107,7 @@ if (require.main === module) {
     console.log('    /api/servicios        catálogo de servicios');
     console.log('    /api/solicitudes      solicitudes y su bitácora');
     console.log('    /api/reportes         reportes del tablero (administrador)');
+    console.log('    /api/bitacora         sellos de integridad (administrador, v1.2)');
     console.log('================================================================');
   });
 }
