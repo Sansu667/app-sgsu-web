@@ -1,7 +1,7 @@
 {
   "name": "app-sgsu-web",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Aplicacion web del Sistema de Gestion de Solicitudes de Servicios (SGSU) - Evidencia GA8-220501096-AA1-EV01",
   "author": "Edgar Santiago Suarez Alzate",
   "license": "MIT",
@@ -12,9 +12,12 @@
     "dev": "vite",
     "api": "node --no-warnings servidor/servidor.js",
     "build": "vite build",
+    "start": "node --no-warnings servidor/servidor.js",
     "preview": "vite preview",
     "prueba": "vitest run",
-    "prueba:ver": "vitest"
+    "prueba:ver": "vitest",
+    "prueba:e2e": "playwright test",
+    "prueba:api": "newman run postman/Testing_API_SGSU.postman_collection.json -e postman/Entorno_Local.postman_environment.json"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -25,10 +28,12 @@
     "react-router-dom": "^6.26.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@testing-library/jest-dom": "^6.5.0",
     "@testing-library/react": "^16.0.1",
     "@vitejs/plugin-react": "^4.3.1",
     "jsdom": "^25.0.1",
+    "newman": "^6.2.2",
     "vite": "^5.4.8",
     "vitest": "^2.1.2"
   }

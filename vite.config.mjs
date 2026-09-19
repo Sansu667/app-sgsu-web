@@ -9,7 +9,9 @@ export default defineConfig({
     // En desarrollo, /api se redirige a la API que corre en el puerto 3000,
     // para evitar problemas de CORS y usar rutas relativas en todo el código.
     proxy: {
-      '/api': { target: 'http://localhost:3000', changeOrigin: true },
+      // API_OBJETIVO permite apuntar a otra instancia de la API, como la que
+      // levantan las pruebas de extremo a extremo en el puerto 3100.
+      '/api': { target: process.env.API_OBJETIVO || 'http://localhost:3000', changeOrigin: true },
     },
   },
   build: {

@@ -5,3 +5,6 @@ datos/
 .DS_Store
 .env
 .vercel
+test-results/
+reportes/
+playwright-report/
