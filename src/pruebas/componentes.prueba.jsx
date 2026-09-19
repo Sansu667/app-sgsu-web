@@ -109,6 +109,17 @@ describe('CampoTexto', () => {
     expect(screen.queryByText('Se usa para notificarle.')).toBeNull();
   });
 
+  it('acepta un id propio para no repetir el de otro campo con el mismo nombre', () => {
+    render(
+      <>
+        <CampoTexto etiqueta="Rol del filtro" nombre="rol" id="filtro-rol" valor="" onChange={() => {}} />
+        <CampoTexto etiqueta="Rol del usuario" nombre="rol" valor="" onChange={() => {}} />
+      </>,
+    );
+    expect(screen.getByLabelText('Rol del filtro')).toHaveAttribute('id', 'filtro-rol');
+    expect(screen.getByLabelText('Rol del usuario')).toHaveAttribute('id', 'campo-rol');
+  });
+
   it('dibuja una lista desplegable cuando recibe opciones', () => {
     render(
       <CampoTexto

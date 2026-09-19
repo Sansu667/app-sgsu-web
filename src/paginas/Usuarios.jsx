@@ -157,12 +157,12 @@ export default function Usuarios() {
       >
         <div className="filtros">
           <CampoTexto
-            etiqueta="Rol" nombre="rol" valor={filtro.rol}
+            etiqueta="Rol" nombre="rol" id="filtro-rol" valor={filtro.rol}
             onChange={(e) => setFiltro({ ...filtro, rol: e.target.value })}
             opciones={roles.map((r) => ({ valor: r.nombre, texto: r.nombre }))}
           />
           <CampoTexto
-            etiqueta="Estado" nombre="estado" valor={filtro.estado}
+            etiqueta="Estado" nombre="estado" id="filtro-estado" valor={filtro.estado}
             onChange={(e) => setFiltro({ ...filtro, estado: e.target.value })}
             opciones={[
               { valor: 'activo', texto: 'Activo' },

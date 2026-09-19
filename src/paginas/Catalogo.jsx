@@ -192,7 +192,7 @@ export default function Catalogo() {
       >
         <div className="filtros">
           <CampoTexto
-            etiqueta="Categoría" nombre="categoria" valor={filtro.categoria}
+            etiqueta="Categoría" nombre="categoria" id="filtro-categoria" valor={filtro.categoria}
             onChange={(e) => setFiltro({ ...filtro, categoria: e.target.value })}
             opciones={categorias.map((c) => ({ valor: c, texto: c }))}
           />
