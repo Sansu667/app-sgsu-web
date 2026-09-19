@@ -1,0 +1,74 @@
+From 8f7ea293650d4a0f2e803cb3bcf0cb6f0b54d66c Mon Sep 17 00:00:00 2001
+From: Edgar Santiago Suarez Alzate <sansu801@gmail.com>
+Date: Fri, 18 Sep 2026 19:40:00 -0500
+Subject: [PATCH] Corrige el enrutamiento de la API en Vercel con una
+ reescritura hacia api/index.js
+
+---
+ api/[[...ruta]].js | 12 ------------
+ api/index.js       | 11 +++++++++++
+ vercel.json        |  8 +++-----
+ 3 files changed, 14 insertions(+), 17 deletions(-)
+ delete mode 100644 api/[[...ruta]].js
+ create mode 100644 api/index.js
+
+diff --git a/api/[[...ruta]].js b/api/[[...ruta]].js
+deleted file mode 100644
+index 3f5dfc3..0000000
+--- a/api/[[...ruta]].js
++++ /dev/null
+@@ -1,12 +0,0 @@
+-/**
+- * Punto de entrada de la API en el despliegue sin servidor (Vercel).
+- *
+- * El nombre del archivo entre dobles corchetes hace que esta función atienda
+- * todas las rutas que empiecen por /api, de modo que el enrutamiento interno
+- * lo sigue resolviendo Express exactamente igual que en el ambiente de
+- * desarrollo. Así no hay dos versiones de la API: es el mismo código de la
+- * carpeta servidor/, montado de dos maneras distintas.
+- */
+-const aplicacion = require('../servidor/servidor.js');
+-
+-module.exports = aplicacion;
+diff --git a/api/index.js b/api/index.js
+new file mode 100644
+index 0000000..43896c7
+--- /dev/null
++++ b/api/index.js
+@@ -0,0 +1,11 @@
++/**
++ * Punto de entrada de la API en el despliegue sin servidor (Vercel).
++ *
++ * Todas las peticiones que empiezan por /api se reescriben hacia esta función
++ * (ver vercel.json), y Express resuelve la ruta interna exactamente igual que
++ * en el ambiente de desarrollo. Así no hay dos versiones de la API: es el
++ * mismo código de la carpeta servidor/, montado de dos maneras distintas.
++ */
++const aplicacion = require('../servidor/servidor.js');
++
++module.exports = aplicacion;
+diff --git a/vercel.json b/vercel.json
+index cb4059f..3b89495 100644
+--- a/vercel.json
++++ b/vercel.json
+@@ -4,14 +4,12 @@
+   "buildCommand": "npm run build",
+   "outputDirectory": "dist",
+   "functions": {
+-    "api/**": {
++    "api/index.js": {
+       "includeFiles": "documentacion/**"
+     }
+   },
+   "rewrites": [
+-    {
+-      "source": "/((?!api/).*)",
+-      "destination": "/index.html"
+-    }
++    { "source": "/api/(.*)", "destination": "/api" },
++    { "source": "/((?!api).*)", "destination": "/index.html" }
+   ]
+ }
+-- 
+2.43.0
+
