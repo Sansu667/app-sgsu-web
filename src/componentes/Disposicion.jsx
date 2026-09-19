@@ -11,7 +11,7 @@ export default function Disposicion() {
         <Outlet />
       </main>
       <footer className="disposicion__pie">
-        SGSU 1.0.0 · Evidencia GA8-220501096-AA1-EV01 · Edgar Santiago Suarez Alzate — Ficha 3186595
+        SGSU 1.1.0 · Edgar Santiago Suarez Alzate — Ficha 3186595
       </footer>
     </div>
   );

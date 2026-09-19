@@ -59,6 +59,17 @@ aplicacion.use('/api/servicios', servicioRutas);
 aplicacion.use('/api/solicitudes', solicitudRutas);
 aplicacion.use('/api/reportes', reporteRutas);
 
+// Aplicación web compilada. Si existe la carpeta dist (después de npm run
+// build), este mismo servidor la entrega, y el sistema completo corre en un
+// solo puerto sin necesidad de Vite. Las rutas que no son de la API
+// devuelven index.html para que funcione la navegación de React.
+const CARPETA_WEB = path.join(__dirname, '..', 'dist');
+if (fs.existsSync(path.join(CARPETA_WEB, 'index.html'))) {
+  aplicacion.use(express.static(CARPETA_WEB));
+  aplicacion.get(/^\/(?!api(\/|$)).*/, (peticion, respuesta) =>
+    respuesta.sendFile(path.join(CARPETA_WEB, 'index.html')));
+}
+
 aplicacion.use(rutaNoEncontrada);
 aplicacion.use(manejadorErrores);
 
@@ -73,11 +84,14 @@ if (require.main === module) {
     const docs = fs.existsSync(path.join(CARPETA_DOCS, 'api-sgsu.html'));
     console.log('================================================================');
     console.log('  API SGSU — Sistema de Gestión de Solicitudes de Servicios');
-    console.log('  Evidencia GA8-220501096-AA1-EV01');
+    console.log('  Evidencias GA8-220501096-AA1-EV01 y AA1-EV02');
     console.log('  Edgar Santiago Suarez Alzate — Ficha 3186595');
     console.log('================================================================');
     console.log(`  Servidor escuchando en  http://localhost:${PUERTO}`);
     if (docs) console.log(`  Documentación en        http://localhost:${PUERTO}/api/docs`);
+    if (fs.existsSync(path.join(CARPETA_WEB, 'index.html'))) {
+      console.log(`  Aplicación web en       http://localhost:${PUERTO}/`);
+    }
     console.log('  Módulos:');
     console.log('    /api/salud            estado del servicio');
     console.log('    /api/autenticacion    registro, login y perfil');
