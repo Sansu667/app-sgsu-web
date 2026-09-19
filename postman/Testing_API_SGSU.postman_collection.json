@@ -1,0 +1,3577 @@
+{
+  "info": {
+    "_postman_id": "7e2674e6-aeab-438f-a59a-90cd213f53cd",
+    "name": "Testing API SGSU — GA7-220501096-AA5-EV04",
+    "description": "Colección de pruebas de la API del Sistema de Gestión de Solicitudes de Servicios (SGSU), construida en la evidencia AA5-EV03.\n\nAutor: Edgar Santiago Suarez Alzate — Ficha 3186595.\nTecnólogo en Análisis y Desarrollo de Software — SENA.\n\nLas peticiones se ejecutan en orden porque el flujo depende de los pasos anteriores: los primeros casos guardan los tokens de los tres roles y el bloque de solicitudes recorre el ciclo completo de una solicitud, desde que el cliente la radica hasta que el administrador la cierra.\n\nPara ejecutarla: levantar la API con `MODO_PRUEBAS=1 npm start` y correr la colección con el Collection Runner de Postman o con Newman.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 Disponibilidad del servicio",
+      "description": "Verificación previa de que la API esté arriba antes de ejecutar el resto.",
+      "item": [
+        {
+          "name": "CP-01 Verificar que la API esté operativa",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{urlBase}}/api/salud",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "salud"
+              ]
+            },
+            "description": "Comprueba que el servicio responda antes de empezar las pruebas."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"La respuesta viene en formato JSON\", function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test(\"El servicio reporta estado operativo\", function () {",
+                  "    const c = pm.response.json();",
+                  "    pm.expect(c.exito).to.eql(true);",
+                  "    pm.expect(c.estado).to.eql(\"operativo\");",
+                  "    pm.expect(c.servicio).to.include(\"SGSU\");",
+                  "});",
+                  "",
+                  "pm.test(\"El tiempo de respuesta es menor a 1500 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1500);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "01 Autenticación",
+      "description": "Inicio de sesión con los tres roles, registro público y acceso al perfil.",
+      "item": [
+        {
+          "name": "CP-02 Iniciar sesión como administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/login",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "login"
+              ]
+            },
+            "description": "Caso exitoso. Guarda el token del administrador para el resto de la colección.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"admin\",\n  \"contrasena\": \"Admin2026*\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"El mensaje es 'Autenticación satisfactoria.'\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.eql(\"Autenticación satisfactoria.\");",
+                  "});",
+                  "pm.test(\"Devuelve un token JWT de tres partes\", function () {",
+                  "    const c = pm.response.json();",
+                  "    pm.expect(c.token).to.be.a(\"string\");",
+                  "    pm.expect(c.token.split(\".\")).to.have.lengthOf(3);",
+                  "    pm.collectionVariables.set(\"tokenAdmin\", c.token);",
+                  "});",
+                  "pm.test(\"El usuario autenticado tiene rol administrador\", function () {",
+                  "    pm.expect(pm.response.json().usuario.rol).to.eql(\"administrador\");",
+                  "});",
+                  "pm.test(\"La respuesta no expone la contraseña\", function () {",
+                  "    pm.expect(pm.response.text()).to.not.include(\"contrasena_hash\");",
+                  "});",
+                  "",
+                  "pm.test(\"El tiempo de respuesta es menor a 1500 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1500);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-03 Iniciar sesión como técnico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/login",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "login"
+              ]
+            },
+            "description": "Guarda el token del primer técnico y su identificador.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"laura.tecnico\",\n  \"contrasena\": \"Tecnico2026*\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"El usuario autenticado tiene rol tecnico\", function () {",
+                  "    const c = pm.response.json();",
+                  "    pm.expect(c.usuario.rol).to.eql(\"tecnico\");",
+                  "    pm.collectionVariables.set(\"tokenTecnico\", c.token);",
+                  "    pm.collectionVariables.set(\"idTecnico\", c.usuario.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-04 Iniciar sesión como segundo técnico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/login",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "login"
+              ]
+            },
+            "description": "Se usa más adelante para comprobar que un técnico no puede mover solicitudes ajenas.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"julian.tecnico\",\n  \"contrasena\": \"Tecnico2026*\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Se guarda el token del segundo técnico\", function () {",
+                  "    const c = pm.response.json();",
+                  "    pm.expect(c.usuario.rol).to.eql(\"tecnico\");",
+                  "    pm.collectionVariables.set(\"tokenTecnico2\", c.token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-05 Iniciar sesión como cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/login",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "login"
+              ]
+            },
+            "description": "Guarda el token del cliente que radicará las solicitudes.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"ana.gomez\",\n  \"contrasena\": \"Usuario2026*\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"El usuario autenticado tiene rol cliente\", function () {",
+                  "    const c = pm.response.json();",
+                  "    pm.expect(c.usuario.rol).to.eql(\"cliente\");",
+                  "    pm.collectionVariables.set(\"tokenCliente\", c.token);",
+                  "    pm.collectionVariables.set(\"idCliente\", c.usuario.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-06 Iniciar sesión con contraseña incorrecta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/login",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "login"
+              ]
+            },
+            "description": "El usuario existe pero la contraseña está mala: debe devolver error de autenticación.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"admin\",\n  \"contrasena\": \"ClaveEquivocada1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"El mensaje informa el error de autenticación\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"Error en la autenticación\");",
+                  "});",
+                  "pm.test(\"La respuesta no entrega token\", function () {",
+                  "    pm.expect(pm.response.json()).to.not.have.property(\"token\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-07 Iniciar sesión con un usuario que no existe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/login",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "login"
+              ]
+            },
+            "description": "La API responde igual que con contraseña incorrecta, para no revelar qué cuentas existen.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"usuario.inexistente\",\n  \"contrasena\": \"Clave2026*\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"El mensaje es idéntico al del CP-06\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.eql(",
+                  "        \"Error en la autenticación: usuario o contraseña incorrectos.\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-08 Iniciar sesión sin enviar la contraseña",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/login",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "login"
+              ]
+            },
+            "description": "Validación de campos obligatorios.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"El error indica que la contraseña es obligatoria\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"contraseña es obligatoria\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-09 Registrar un usuario nuevo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/registro",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "registro"
+              ]
+            },
+            "description": "Registro público. Debe crear el usuario siempre con rol cliente.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreCompleto\": \"Pedro Ramírez Salazar\",\n  \"documento\": \"1009998887\",\n  \"correo\": \"pedro.ramirez@ejemplo.com\",\n  \"nombreUsuario\": \"pedro.ramirez\",\n  \"contrasena\": \"Clave2026*\",\n  \"telefono\": \"3009998877\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"El usuario se crea con rol cliente\", function () {",
+                  "    const u = pm.response.json().usuario;",
+                  "    pm.expect(u.rol).to.eql(\"cliente\");",
+                  "    pm.collectionVariables.set(\"idUsuarioNuevo\", u.id);",
+                  "});",
+                  "pm.test(\"La respuesta no expone la contraseña\", function () {",
+                  "    pm.expect(pm.response.text()).to.not.include(\"contrasena_hash\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-10 Registrar un usuario ya existente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/registro",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "registro"
+              ]
+            },
+            "description": "Se repite el registro del CP-09: debe responder 409 por duplicado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreCompleto\": \"Pedro Ramírez Salazar\",\n  \"documento\": \"1009998887\",\n  \"correo\": \"pedro.ramirez@ejemplo.com\",\n  \"nombreUsuario\": \"pedro.otro\",\n  \"contrasena\": \"Clave2026*\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 409 Conflict\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "pm.test(\"El mensaje indica que el dato ya está registrado\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"Ya existe un usuario\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-11 Registrar con datos inválidos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/registro",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "registro"
+              ]
+            },
+            "description": "Documento con letras, correo sin arroba y contraseña corta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreCompleto\": \"ab\",\n  \"documento\": \"abc\",\n  \"correo\": \"correo-malo\",\n  \"nombreUsuario\": \"xy\",\n  \"contrasena\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Devuelve la lista de errores de validación\", function () {",
+                  "    const c = pm.response.json();",
+                  "    pm.expect(c.exito).to.eql(false);",
+                  "    pm.expect(c.errores).to.be.an(\"array\").that.is.not.empty;",
+                  "});",
+                  "pm.test(\"Reporta al menos tres errores distintos\", function () {",
+                  "    pm.expect(pm.response.json().errores.length).to.be.at.least(3);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-12 Consultar el perfil con token válido",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/perfil",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "perfil"
+              ]
+            },
+            "description": "Ruta protegida con el token del cliente."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"El perfil corresponde al usuario que inició sesión\", function () {",
+                  "    pm.expect(pm.response.json().usuario.nombre_usuario).to.eql(\"ana.gomez\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-13 Consultar el perfil sin token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/perfil",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "perfil"
+              ]
+            },
+            "description": "Sin encabezado Authorization la API debe negar el acceso."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"El mensaje indica que falta el token\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"falta el token\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-14 Consultar el perfil con un token adulterado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.token.falso"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/perfil",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "perfil"
+              ]
+            },
+            "description": "Token inventado: comprueba que la firma se valide."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"El mensaje indica que el token no es válido\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"no es válido\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 Gestión de usuarios",
+      "description": "Servicios reservados al administrador: listado, creación, edición y baja.",
+      "item": [
+        {
+          "name": "CP-15 Listar usuarios como administrador",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/usuarios",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            },
+            "description": "Listado paginado de todos los usuarios del sistema."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Devuelve al menos los seis usuarios del sistema\", function () {",
+                  "    const c = pm.response.json();",
+                  "    pm.expect(c.total).to.be.at.least(6);",
+                  "    pm.expect(c.usuarios).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Ningún usuario expone su contraseña\", function () {",
+                  "    pm.expect(pm.response.text()).to.not.include(\"contrasena_hash\");",
+                  "});",
+                  "pm.test(\"La respuesta incluye los datos de paginación\", function () {",
+                  "    const c = pm.response.json();",
+                  "    pm.expect(c).to.have.property(\"pagina\");",
+                  "    pm.expect(c).to.have.property(\"tamano\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-16 Filtrar usuarios por rol",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/usuarios?rol=tecnico",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ],
+              "query": [
+                {
+                  "key": "rol",
+                  "value": "tecnico"
+                }
+              ]
+            },
+            "description": "El filtro por rol debe devolver únicamente técnicos."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Todos los usuarios devueltos son técnicos\", function () {",
+                  "    const u = pm.response.json().usuarios;",
+                  "    pm.expect(u.length).to.be.above(0);",
+                  "    u.forEach(function (x) { pm.expect(x.rol).to.eql(\"tecnico\"); });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-17 Listar usuarios con token de cliente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/usuarios",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            },
+            "description": "El rol cliente no puede entrar a la gestión de usuarios."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"El mensaje explica que el rol no tiene permiso\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"solo está permitida para el rol administrador\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-18 Consultar el catálogo de roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/usuarios/roles",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "roles"
+              ]
+            },
+            "description": "Devuelve los tres roles definidos en el sistema."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Existen exactamente tres roles\", function () {",
+                  "    const r = pm.response.json().roles;",
+                  "    pm.expect(r).to.have.lengthOf(3);",
+                  "    const nombres = r.map(function (x) { return x.nombre; });",
+                  "    pm.expect(nombres).to.include.members([\"administrador\", \"tecnico\", \"cliente\"]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-19 Crear un usuario con rol técnico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/usuarios",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            },
+            "description": "Solo el administrador puede dar de alta usuarios con un rol distinto de cliente.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreCompleto\": \"Mario Álvarez Toro\",\n  \"documento\": \"1007776665\",\n  \"correo\": \"mario.alvarez@sgsu.co\",\n  \"nombreUsuario\": \"mario.tecnico\",\n  \"contrasena\": \"Tecnico2026*\",\n  \"telefono\": \"3007776655\",\n  \"rol\": \"tecnico\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"El usuario se crea con el rol solicitado\", function () {",
+                  "    const u = pm.response.json().usuario;",
+                  "    pm.expect(u.rol).to.eql(\"tecnico\");",
+                  "    pm.collectionVariables.set(\"idTecnicoNuevo\", u.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-20 Crear un usuario sin indicar el rol",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/usuarios",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            },
+            "description": "El rol es obligatorio en la creación desde la administración.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreCompleto\": \"Sin Rol Definido\",\n  \"documento\": \"1006665554\",\n  \"correo\": \"sin.rol@sgsu.co\",\n  \"nombreUsuario\": \"sin.rol\",\n  \"contrasena\": \"Clave2026*\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"El error menciona el rol\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"rol es obligatorio\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-21 Actualizar los datos de un usuario",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/usuarios/{{idUsuarioNuevo}}",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{idUsuarioNuevo}}"
+              ]
+            },
+            "description": "Se actualiza el usuario creado en el CP-09.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreCompleto\": \"Pedro Ramírez Salazar\",\n  \"documento\": \"1009998887\",\n  \"correo\": \"pedro.actualizado@ejemplo.com\",\n  \"telefono\": \"3001234567\",\n  \"rol\": \"cliente\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"El correo quedó actualizado\", function () {",
+                  "    pm.expect(pm.response.json().usuario.correo).to.eql(\"pedro.actualizado@ejemplo.com\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-22 Inactivar una cuenta",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/usuarios/{{idUsuarioNuevo}}/estado",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{idUsuarioNuevo}}",
+                "estado"
+              ]
+            },
+            "description": "Cambio de estado de la cuenta a inactivo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"inactivo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"La cuenta queda inactiva\", function () {",
+                  "    pm.expect(pm.response.json().usuario.estado).to.eql(\"inactivo\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-23 Iniciar sesión con una cuenta inactiva",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/login",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "login"
+              ]
+            },
+            "description": "Una cuenta inactivada no debe poder autenticarse aunque la contraseña sea correcta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"pedro.ramirez\",\n  \"contrasena\": \"Clave2026*\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"El mensaje indica que la cuenta está inactiva\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"inactiva\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-24 Eliminar un usuario sin solicitudes",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/usuarios/{{idTecnicoNuevo}}",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{idTecnicoNuevo}}"
+              ]
+            },
+            "description": "El técnico creado en el CP-19 no tiene solicitudes, así que se puede eliminar."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"El mensaje confirma la eliminación\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.eql(\"Usuario eliminado correctamente.\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-25 Eliminar un usuario con solicitudes asociadas",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/usuarios/{{idCliente}}",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{idCliente}}"
+              ]
+            },
+            "description": "La integridad referencial impide borrar un cliente que ya radicó solicitudes."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 409 Conflict\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "pm.test(\"El mensaje sugiere inactivar en lugar de borrar\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"Inactive la cuenta\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-26 Consultar un usuario que no existe",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/usuarios/9999",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "9999"
+              ]
+            },
+            "description": "Identificador inexistente."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"El mensaje indica que el usuario no existe\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"No existe un usuario\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 Catálogo de servicios",
+      "description": "Consulta abierta a todos los roles; creación y edición solo del administrador.",
+      "item": [
+        {
+          "name": "CP-27 Consultar el catálogo como cliente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/servicios",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "servicios"
+              ]
+            },
+            "description": "Cualquier usuario autenticado puede ver el catálogo."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"El catálogo trae los ocho servicios sembrados\", function () {",
+                  "    pm.expect(pm.response.json().total).to.be.at.least(8);",
+                  "});",
+                  "pm.test(\"Cada servicio trae código, precio y tiempo estimado\", function () {",
+                  "    const s = pm.response.json().servicios[0];",
+                  "    pm.expect(s).to.have.property(\"codigo\");",
+                  "    pm.expect(s).to.have.property(\"precio_base\");",
+                  "    pm.expect(s).to.have.property(\"tiempo_estimado_horas\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-28 Consultar las categorías del catálogo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/servicios/categorias",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "servicios",
+                "categorias"
+              ]
+            },
+            "description": "Lista de categorías distintas."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Devuelve un arreglo de categorías\", function () {",
+                  "    const c = pm.response.json().categorias;",
+                  "    pm.expect(c).to.be.an(\"array\").that.is.not.empty;",
+                  "    pm.expect(c).to.include(\"Redes\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-29 Filtrar el catálogo por categoría",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/servicios?categoria=Redes",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "servicios"
+              ],
+              "query": [
+                {
+                  "key": "categoria",
+                  "value": "Redes"
+                }
+              ]
+            },
+            "description": "El filtro debe devolver solo servicios de la categoría pedida."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Todos los servicios devueltos son de la categoría Redes\", function () {",
+                  "    const s = pm.response.json().servicios;",
+                  "    pm.expect(s.length).to.be.above(0);",
+                  "    s.forEach(function (x) { pm.expect(x.categoria).to.eql(\"Redes\"); });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-30 Consultar un servicio por identificador",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/servicios/1",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "servicios",
+                "1"
+              ]
+            },
+            "description": "Detalle de un servicio del catálogo."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"El servicio corresponde al identificador pedido\", function () {",
+                  "    pm.expect(pm.response.json().servicio.id).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-31 Consultar un servicio que no existe",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/servicios/9999",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "servicios",
+                "9999"
+              ]
+            },
+            "description": "Identificador inexistente."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"El mensaje indica que el servicio no existe\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"No existe un servicio\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-32 Crear un servicio con token de cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/servicios",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "servicios"
+              ]
+            },
+            "description": "Solo el administrador puede modificar el catálogo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"XXX-001\",\n  \"nombre\": \"Servicio no permitido\",\n  \"descripcion\": \"Intento de creación desde un rol sin permiso.\",\n  \"categoria\": \"Otros\",\n  \"precioBase\": 1000,\n  \"tiempoEstimadoHoras\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"El mensaje explica que el rol no tiene permiso\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"Acceso denegado\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-33 Crear un servicio como administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/servicios",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "servicios"
+              ]
+            },
+            "description": "Caso exitoso de creación en el catálogo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"MTO-001\",\n  \"nombre\": \"Mantenimiento preventivo de equipos\",\n  \"descripcion\": \"Limpieza interna, revisión de componentes y respaldo de datos.\",\n  \"categoria\": \"Soporte\",\n  \"precioBase\": 150000,\n  \"tiempoEstimadoHoras\": 2,\n  \"activo\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"El servicio queda creado con su código\", function () {",
+                  "    const s = pm.response.json().servicio;",
+                  "    pm.expect(s.codigo).to.eql(\"MTO-001\");",
+                  "    pm.expect(s.activo).to.eql(1);",
+                  "    pm.collectionVariables.set(\"idServicioNuevo\", s.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-34 Crear un servicio con un código repetido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/servicios",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "servicios"
+              ]
+            },
+            "description": "El código del catálogo es único.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"MTO-001\",\n  \"nombre\": \"Otro servicio distinto\",\n  \"descripcion\": \"Descripción suficientemente larga para pasar la validación.\",\n  \"categoria\": \"Soporte\",\n  \"precioBase\": 90000,\n  \"tiempoEstimadoHoras\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 409 Conflict\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "pm.test(\"El mensaje indica que el código ya existe\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"Ya existe un servicio con ese código\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-35 Crear un servicio con datos inválidos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/servicios",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "servicios"
+              ]
+            },
+            "description": "Código con formato incorrecto, precio negativo y tiempo en cero.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"malo\",\n  \"nombre\": \"ab\",\n  \"descripcion\": \"corta\",\n  \"categoria\": \"\",\n  \"precioBase\": -5000,\n  \"tiempoEstimadoHoras\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Reporta varios errores de validación\", function () {",
+                  "    pm.expect(pm.response.json().errores.length).to.be.at.least(3);",
+                  "});",
+                  "pm.test(\"El error menciona el formato del código\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"AAA-000\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-36 Actualizar un servicio del catálogo",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/servicios/{{idServicioNuevo}}",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "servicios",
+                "{{idServicioNuevo}}"
+              ]
+            },
+            "description": "Se actualiza el servicio creado en el CP-33.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"MTO-001\",\n  \"nombre\": \"Mantenimiento preventivo anual\",\n  \"descripcion\": \"Limpieza interna, revisión de componentes y respaldo de datos.\",\n  \"categoria\": \"Soporte\",\n  \"precioBase\": 180000,\n  \"tiempoEstimadoHoras\": 3,\n  \"activo\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"El precio y el tiempo quedaron actualizados\", function () {",
+                  "    const s = pm.response.json().servicio;",
+                  "    pm.expect(s.precio_base).to.eql(180000);",
+                  "    pm.expect(s.tiempo_estimado_horas).to.eql(3);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-37 Eliminar un servicio que está en uso",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/servicios/1",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "servicios",
+                "1"
+              ]
+            },
+            "description": "El servicio 1 ya tiene solicitudes asociadas, así que no se puede borrar."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 409 Conflict\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "pm.test(\"El mensaje sugiere desactivar en lugar de borrar\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"Desactívelo\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-38 Eliminar un servicio sin uso",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/servicios/{{idServicioNuevo}}",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "servicios",
+                "{{idServicioNuevo}}"
+              ]
+            },
+            "description": "El servicio creado en el CP-33 no tiene solicitudes, así que sí se puede borrar."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"El mensaje confirma la eliminación\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.eql(\"Servicio eliminado correctamente.\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 Solicitudes de servicio",
+      "description": "Flujo completo de una solicitud: radicación, asignación, avance, cierre y bitácora.",
+      "item": [
+        {
+          "name": "CP-39 Radicar una solicitud con token de administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ]
+            },
+            "description": "Radicar es exclusivo del rol cliente.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idServicio\": 2,\n  \"descripcion\": \"Intento de radicación desde administración.\",\n  \"direccion\": \"Carrera 45 #12-30, Medellín\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"El mensaje indica que solo el cliente puede radicar\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"rol cliente\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-40 Radicar una solicitud como cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ]
+            },
+            "description": "Caso principal del proyecto: el cliente radica su solicitud.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idServicio\": 2,\n  \"descripcion\": \"No abre el correo corporativo desde el lunes.\",\n  \"direccion\": \"Carrera 45 #12-30, oficina 201, Medellín\",\n  \"prioridad\": \"alta\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"La solicitud nace en estado registrada\", function () {",
+                  "    const s = pm.response.json().solicitud;",
+                  "    pm.expect(s.estado).to.eql(\"registrada\");",
+                  "    pm.collectionVariables.set(\"idSolicitud\", s.id);",
+                  "});",
+                  "pm.test(\"La API genera el código consecutivo SOL-AAAA-0000\", function () {",
+                  "    pm.expect(pm.response.json().solicitud.codigo).to.match(/^SOL-\\d{4}-\\d{4}$/);",
+                  "});",
+                  "pm.test(\"La solicitud trae el nombre del cliente y del servicio\", function () {",
+                  "    const s = pm.response.json().solicitud;",
+                  "    pm.expect(s.cliente).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(s.servicio).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "pm.test(\"La solicitud nace sin técnico asignado\", function () {",
+                  "    pm.expect(pm.response.json().solicitud.id_tecnico).to.eql(null);",
+                  "});",
+                  "",
+                  "pm.test(\"El tiempo de respuesta es menor a 1500 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1500);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-41 Radicar una solicitud con datos inválidos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ]
+            },
+            "description": "Servicio en cero, descripción corta y dirección corta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idServicio\": 0,\n  \"descripcion\": \"corta\",\n  \"direccion\": \"x\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Reporta los tres errores de validación\", function () {",
+                  "    pm.expect(pm.response.json().errores.length).to.be.at.least(3);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-42 Radicar sobre un servicio que no existe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ]
+            },
+            "description": "El identificador del servicio no está en el catálogo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idServicio\": 9999,\n  \"descripcion\": \"Descripción suficientemente larga.\",\n  \"direccion\": \"Calle 10 #5-22, Envigado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"El mensaje indica que el servicio no existe\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"no existe en el catálogo\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-43 Radicar sobre un servicio desactivado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ]
+            },
+            "description": "El servicio 8 del catálogo está inactivo y no admite solicitudes nuevas.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idServicio\": 8,\n  \"descripcion\": \"Descripción suficientemente larga.\",\n  \"direccion\": \"Calle 10 #5-22, Envigado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 409 Conflict\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "pm.test(\"El mensaje indica que el servicio está desactivado\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"desactivado\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-44 Listar solicitudes como cliente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ]
+            },
+            "description": "El cliente solo debe ver las solicitudes que él radicó."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Todas las solicitudes pertenecen al cliente autenticado\", function () {",
+                  "    const idCliente = Number(pm.collectionVariables.get(\"idCliente\"));",
+                  "    const s = pm.response.json().solicitudes;",
+                  "    pm.expect(s.length).to.be.above(0);",
+                  "    s.forEach(function (x) { pm.expect(x.id_usuario).to.eql(idCliente); });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-45 Listar solicitudes como técnico",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTecnico}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ]
+            },
+            "description": "El técnico solo debe ver las solicitudes que tiene asignadas."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Todas las solicitudes están asignadas al técnico autenticado\", function () {",
+                  "    const idTecnico = Number(pm.collectionVariables.get(\"idTecnico\"));",
+                  "    pm.response.json().solicitudes.forEach(function (x) {",
+                  "        pm.expect(x.id_tecnico).to.eql(idTecnico);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-46 Listar solicitudes como administrador",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ]
+            },
+            "description": "El administrador ve todas las solicitudes del sistema."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"El administrador ve más solicitudes que el cliente\", function () {",
+                  "    pm.expect(pm.response.json().total).to.be.at.least(4);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-47 Filtrar solicitudes por estado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes?estado=registrada",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "registrada"
+                }
+              ]
+            },
+            "description": "Filtro por estado registrada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Todas las solicitudes devueltas están en estado registrada\", function () {",
+                  "    pm.response.json().solicitudes.forEach(function (x) {",
+                  "        pm.expect(x.estado).to.eql(\"registrada\");",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-48 Consultar la solicitud propia",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes/{{idSolicitud}}",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{idSolicitud}}"
+              ]
+            },
+            "description": "El cliente consulta el detalle de la solicitud que radicó."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Es la solicitud creada en el CP-40\", function () {",
+                  "    const esperado = Number(pm.collectionVariables.get(\"idSolicitud\"));",
+                  "    pm.expect(pm.response.json().solicitud.id).to.eql(esperado);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-49 Consultar la solicitud de otro cliente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes/2",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "2"
+              ]
+            },
+            "description": "La solicitud 2 fue radicada por otro cliente: no debe ser visible."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"El mensaje indica que la solicitud no le pertenece\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"no le pertenece\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-50 Corregir la solicitud antes de que la asignen",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes/{{idSolicitud}}",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{idSolicitud}}"
+              ]
+            },
+            "description": "Mientras está en estado registrada, el cliente puede corregirla.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idServicio\": 2,\n  \"descripcion\": \"Corrijo: no abre el correo ni desde el celular.\",\n  \"direccion\": \"Carrera 45 #12-30, oficina 201, Medellín\",\n  \"prioridad\": \"media\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"La descripción quedó actualizada\", function () {",
+                  "    pm.expect(pm.response.json().solicitud.descripcion).to.include(\"ni desde el celular\");",
+                  "});",
+                  "pm.test(\"La solicitud sigue en estado registrada\", function () {",
+                  "    pm.expect(pm.response.json().solicitud.estado).to.eql(\"registrada\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-51 Saltarse el flujo de estados",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes/{{idSolicitud}}/estado",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{idSolicitud}}",
+                "estado"
+              ]
+            },
+            "description": "Intento de pasar de registrada directamente a resuelta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"resuelta\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 409 Conflict\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "pm.test(\"El mensaje dice qué transiciones sí se permiten\", function () {",
+                  "    const m = pm.response.json().mensaje;",
+                  "    pm.expect(m).to.include(\"No se puede pasar\");",
+                  "    pm.expect(m).to.include(\"asignada, cancelada\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-52 Asignar la solicitud a un usuario que no es técnico",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes/{{idSolicitud}}/asignar",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{idSolicitud}}",
+                "asignar"
+              ]
+            },
+            "description": "Se intenta asignar la solicitud al propio cliente.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idTecnico\": \"{{idCliente}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 409 Conflict\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "pm.test(\"El mensaje indica que el usuario no es técnico\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"no tiene el rol de técnico\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-53 Asignar la solicitud a un técnico",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes/{{idSolicitud}}/asignar",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{idSolicitud}}",
+                "asignar"
+              ]
+            },
+            "description": "El administrador asigna la solicitud y esta pasa a estado asignada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idTecnico\": \"{{idTecnico}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"La solicitud queda en estado asignada\", function () {",
+                  "    pm.expect(pm.response.json().solicitud.estado).to.eql(\"asignada\");",
+                  "});",
+                  "pm.test(\"La solicitud queda con el técnico asignado\", function () {",
+                  "    const idTecnico = Number(pm.collectionVariables.get(\"idTecnico\"));",
+                  "    const s = pm.response.json().solicitud;",
+                  "    pm.expect(s.id_tecnico).to.eql(idTecnico);",
+                  "    pm.expect(s.tecnico).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-54 Corregir una solicitud ya asignada",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes/{{idSolicitud}}",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{idSolicitud}}"
+              ]
+            },
+            "description": "Una vez asignada, los datos quedan congelados para el cliente.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idServicio\": 2,\n  \"descripcion\": \"Intento de edición después de la asignación.\",\n  \"direccion\": \"Carrera 45 #12-30, Medellín\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 409 Conflict\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "pm.test(\"El mensaje explica que solo se edita en estado registrada\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"Solo se puede editar\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-55 Mover una solicitud que está asignada a otro técnico",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTecnico2}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes/{{idSolicitud}}/estado",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{idSolicitud}}",
+                "estado"
+              ]
+            },
+            "description": "El segundo técnico no tiene esta solicitud asignada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"en_proceso\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"El mensaje indica que la solicitud no está asignada a él\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"no está asignada a usted\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-56 Iniciar el trabajo sobre la solicitud",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTecnico}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes/{{idSolicitud}}/estado",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{idSolicitud}}",
+                "estado"
+              ]
+            },
+            "description": "El técnico asignado pasa la solicitud a en_proceso.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"en_proceso\",\n  \"comentario\": \"Se inicia la revisión remota del buzón.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"La solicitud pasa a en_proceso\", function () {",
+                  "    pm.expect(pm.response.json().solicitud.estado).to.eql(\"en_proceso\");",
+                  "});",
+                  "pm.test(\"El mensaje reporta la transición realizada\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include('de \"asignada\" a \"en_proceso\"');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-57 Reportar la solicitud como resuelta",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTecnico}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes/{{idSolicitud}}/estado",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{idSolicitud}}",
+                "estado"
+              ]
+            },
+            "description": "El técnico termina el trabajo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"resuelta\",\n  \"comentario\": \"Se restableció la contraseña y se reconfiguró el cliente de correo.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"La solicitud pasa a resuelta\", function () {",
+                  "    pm.expect(pm.response.json().solicitud.estado).to.eql(\"resuelta\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-58 Intentar cerrar la solicitud como técnico",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTecnico}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes/{{idSolicitud}}/estado",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{idSolicitud}}",
+                "estado"
+              ]
+            },
+            "description": "El cierre está reservado al administrador.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"cerrada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"El mensaje indica que el cierre lo hace el administrador\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"administrador\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-59 Cerrar la solicitud como administrador",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes/{{idSolicitud}}/estado",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{idSolicitud}}",
+                "estado"
+              ]
+            },
+            "description": "Último paso del flujo: el administrador cierra la solicitud.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"cerrada\",\n  \"comentario\": \"El cliente confirma que el correo ya funciona.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"La solicitud queda cerrada\", function () {",
+                  "    pm.expect(pm.response.json().solicitud.estado).to.eql(\"cerrada\");",
+                  "});",
+                  "pm.test(\"Se registra la fecha de cierre\", function () {",
+                  "    pm.expect(pm.response.json().solicitud.fecha_cierre).to.not.eql(null);",
+                  "});",
+                  "pm.test(\"Se guarda la observación de cierre\", function () {",
+                  "    pm.expect(pm.response.json().solicitud.observacion_cierre).to.include(\"confirma\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-60 Mover una solicitud ya cerrada",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes/{{idSolicitud}}/estado",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{idSolicitud}}",
+                "estado"
+              ]
+            },
+            "description": "Cerrada es un estado final.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"en_proceso\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 409 Conflict\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "pm.test(\"El mensaje indica que el estado es final\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"es final\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-61 Consultar la bitácora de la solicitud",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes/{{idSolicitud}}/bitacora",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{idSolicitud}}",
+                "bitacora"
+              ]
+            },
+            "description": "Trazabilidad completa del recorrido de la solicitud."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"La bitácora tiene un movimiento por cada paso del flujo\", function () {",
+                  "    pm.expect(pm.response.json().total).to.be.at.least(6);",
+                  "});",
+                  "pm.test(\"El primer movimiento es la creación de la solicitud\", function () {",
+                  "    const m = pm.response.json().movimientos[0];",
+                  "    pm.expect(m.estado_anterior).to.eql(null);",
+                  "    pm.expect(m.estado_nuevo).to.eql(\"registrada\");",
+                  "});",
+                  "pm.test(\"El último movimiento es el cierre\", function () {",
+                  "    const m = pm.response.json().movimientos;",
+                  "    pm.expect(m[m.length - 1].estado_nuevo).to.eql(\"cerrada\");",
+                  "});",
+                  "pm.test(\"Cada movimiento identifica al usuario que lo hizo\", function () {",
+                  "    pm.response.json().movimientos.forEach(function (x) {",
+                  "        pm.expect(x.usuario).to.be.a(\"string\").and.not.empty;",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-62 Eliminar una solicitud con token de cliente",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes/{{idSolicitud}}",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{idSolicitud}}"
+              ]
+            },
+            "description": "El borrado está reservado al administrador."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-63 Eliminar la solicitud como administrador",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes/{{idSolicitud}}",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{idSolicitud}}"
+              ]
+            },
+            "description": "Se elimina la solicitud junto con su bitácora."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"El mensaje confirma que también se borró la bitácora\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"bitácora\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-64 Consultar la solicitud eliminada",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/solicitudes/{{idSolicitud}}",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{idSolicitud}}"
+              ]
+            },
+            "description": "Confirma que el borrado se aplicó."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 Reportes del tablero",
+      "description": "Consultas agregadas del administrador.",
+      "item": [
+        {
+          "name": "CP-65 Solicitudes agrupadas por estado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/reportes/solicitudes-por-estado",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "solicitudes-por-estado"
+              ]
+            },
+            "description": "Debe devolver los seis estados, incluidos los que están en cero."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Devuelve los seis estados del sistema\", function () {",
+                  "    pm.expect(pm.response.json().porEstado).to.have.lengthOf(6);",
+                  "});",
+                  "pm.test(\"La suma de los estados coincide con el total\", function () {",
+                  "    const c = pm.response.json();",
+                  "    const suma = c.porEstado.reduce(function (a, x) { return a + x.total; }, 0);",
+                  "    pm.expect(suma).to.eql(c.total);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-66 Servicios más solicitados",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/reportes/servicios-mas-solicitados?limite=5",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "servicios-mas-solicitados"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Ranking de servicios con su ingreso estimado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Respeta el límite pedido\", function () {",
+                  "    const c = pm.response.json();",
+                  "    pm.expect(c.limite).to.eql(5);",
+                  "    pm.expect(c.servicios.length).to.be.at.most(5);",
+                  "});",
+                  "pm.test(\"El ranking viene ordenado de mayor a menor\", function () {",
+                  "    const s = pm.response.json().servicios;",
+                  "    for (let i = 1; i < s.length; i++) {",
+                  "        pm.expect(s[i - 1].total_solicitudes).to.be.at.least(s[i].total_solicitudes);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-67 Carga de trabajo por técnico",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/reportes/carga-por-tecnico",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "carga-por-tecnico"
+              ]
+            },
+            "description": "Solicitudes asignadas, abiertas y finalizadas por cada técnico."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Aparecen los dos técnicos del sistema\", function () {",
+                  "    pm.expect(pm.response.json().total).to.be.at.least(2);",
+                  "});",
+                  "pm.test(\"Cada técnico trae sus tres contadores\", function () {",
+                  "    pm.response.json().tecnicos.forEach(function (t) {",
+                  "        pm.expect(t).to.have.property(\"total_asignadas\");",
+                  "        pm.expect(t).to.have.property(\"abiertas\");",
+                  "        pm.expect(t).to.have.property(\"finalizadas\");",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-68 Consultar reportes con token de técnico",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTecnico}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/reportes/solicitudes-por-estado",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "solicitudes-por-estado"
+              ]
+            },
+            "description": "Los reportes son exclusivos del administrador."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06 Manejo de errores",
+      "description": "Comportamiento de la API frente a peticiones mal formadas o a rutas que no existen.",
+      "item": [
+        {
+          "name": "CP-69 Solicitar una ruta que no existe",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/ruta/inexistente",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "ruta",
+                "inexistente"
+              ]
+            },
+            "description": "Comprueba que la API responda 404 en JSON y no con una página de error."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"La respuesta viene en formato JSON\", function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test(\"El mensaje nombra la ruta solicitada\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"no existe en esta API\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-70 Enviar un cuerpo que no es JSON válido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/login",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "login"
+              ]
+            },
+            "description": "El cuerpo llega con una llave sin cerrar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombreUsuario\": \"admin\", \"contrasena\": ",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"El mensaje indica que el JSON no es válido\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"no es un JSON válido\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "urlBase",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "tokenAdmin",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenTecnico",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenTecnico2",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenCliente",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idCliente",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idTecnico",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idUsuarioNuevo",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idTecnicoNuevo",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idServicioNuevo",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idSolicitud",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
