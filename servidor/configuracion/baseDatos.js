@@ -88,6 +88,18 @@ function iniciarBaseDatos() {
       fecha           TEXT NOT NULL DEFAULT (datetime('now','localtime'))
     );
 
+    -- Versión 1.2 (NF-03): sello diario de integridad de la bitácora.
+    -- Cada sello guarda el hash SHA-256 de los movimientos del día encadenado
+    -- con el hash del sello anterior, igual que una cadena de bloques sencilla.
+    CREATE TABLE IF NOT EXISTS sello_bitacora (
+      id                INTEGER PRIMARY KEY AUTOINCREMENT,
+      fecha             TEXT NOT NULL UNIQUE,
+      total_movimientos INTEGER NOT NULL,
+      hash              TEXT NOT NULL,
+      hash_anterior     TEXT NOT NULL,
+      creado            TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    );
+
     CREATE INDEX IF NOT EXISTS idx_solicitud_usuario ON solicitud(id_usuario);
     CREATE INDEX IF NOT EXISTS idx_solicitud_estado  ON solicitud(estado);
     CREATE INDEX IF NOT EXISTS idx_bitacora_solicitud ON bitacora(id_solicitud);
@@ -97,6 +109,7 @@ function iniciarBaseDatos() {
 /** Vacía todas las tablas. Se usa solo en modo de pruebas. */
 function limpiarBaseDatos() {
   baseDatos.exec(`
+    DELETE FROM sello_bitacora;
     DELETE FROM bitacora;
     DELETE FROM solicitud;
     DELETE FROM servicio;

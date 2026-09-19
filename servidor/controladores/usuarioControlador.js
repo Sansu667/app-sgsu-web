@@ -2,13 +2,11 @@
  * Controlador de la gestión de usuarios. Todas las operaciones de este
  * archivo son de uso exclusivo del administrador.
  */
-const bcrypt = require('bcryptjs');
+const contrasenas = require('../utilidades/contrasenas');
 
 const usuarioModelo = require('../modelos/usuarioModelo');
 const { validarUsuario } = require('../utilidades/validaciones');
 const { exito, error } = require('../utilidades/respuestas');
-
-const RONDAS_SAL = 10;
 
 /** GET /api/usuarios — lista con filtros y paginación. */
 function listar(peticion, respuesta) {
@@ -30,7 +28,8 @@ function consultarPorId(peticion, respuesta) {
 }
 
 /** POST /api/usuarios — el administrador crea usuarios con cualquier rol. */
-function crear(peticion, respuesta) {
+async function crear(peticion, respuesta, siguiente) {
+  try {
   const errores = validarUsuario(peticion.body);
   const { rol } = peticion.body || {};
   const rolEncontrado = rol ? usuarioModelo.buscarRolPorNombre(rol) : null;
@@ -50,10 +49,13 @@ function crear(peticion, respuesta) {
 
   const usuario = usuarioModelo.crear({
     nombreCompleto, documento, correo, nombreUsuario, telefono,
-    contrasenaHash: bcrypt.hashSync(contrasena, RONDAS_SAL),
+    contrasenaHash: await contrasenas.calcularHash(contrasena),
     idRol: rolEncontrado.id,
   });
   return exito(respuesta, 201, { usuario }, 'Usuario creado correctamente.');
+  } catch (e) {
+    return siguiente(e);
+  }
 }
 
 /** PUT /api/usuarios/:id — actualiza los datos del usuario. */

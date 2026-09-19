@@ -1,7 +1,7 @@
 {
   "name": "app-sgsu-web",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Aplicacion web del Sistema de Gestion de Solicitudes de Servicios (SGSU) - Evidencia GA8-220501096-AA1-EV01",
   "author": "Edgar Santiago Suarez Alzate",
   "license": "MIT",
@@ -17,6 +17,7 @@
     "prueba": "vitest run",
     "prueba:ver": "vitest",
     "prueba:e2e": "playwright test",
+    "prueba:servidor": "node --no-warnings --test --test-reporter=spec \"servidor/pruebas/*.test.js\"",
     "prueba:api": "newman run postman/Testing_API_SGSU.postman_collection.json -e postman/Entorno_Local.postman_environment.json"
   },
   "dependencies": {

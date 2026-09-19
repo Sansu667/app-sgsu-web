@@ -3515,6 +3515,541 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "07 Versión 1.2 (funcionalidades nuevas)",
+      "description": "Casos de las funcionalidades nuevas NF-02 y NF-03 del plan PP-SGSU-1.2. Van al final porque bloquean usuarios; cada caso usa su propia IP simulada con X-Forwarded-For.",
+      "item": [
+        {
+          "name": "CP-71 La API reporta la versión 1.2.0",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/salud",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "salud"
+              ]
+            },
+            "description": "Comprueba que el servidor bajo prueba es la versión 1.2.0."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"La versión es 1.2.0\", function () {",
+                  "    pm.expect(pm.response.json().version).to.eql(\"1.2.0\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-NF02-01 El sexto intento fallido responde 429",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-For",
+                "value": "203.0.113.50",
+                "description": "Simula un cliente con otra IP detrás del proxy"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/login",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "login"
+              ]
+            },
+            "description": "Valores límite: el script previo envía cinco inicios de sesión con la contraseña errada desde la IP 203.0.113.50; esta petición es el sexto intento.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"julian.tecnico\",\n  \"contrasena\": \"clave-mala\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const IP = \"203.0.113.50\";",
+                  "",
+                  "// Envía en serie los inicios de sesión de la lista y guarda los códigos obtenidos.",
+                  "function enviarSerie(lista, alTerminar, codigos = []) {",
+                  "    if (lista.length === 0) return alTerminar(codigos);",
+                  "    const [usuario, clave] = lista[0];",
+                  "    pm.sendRequest({",
+                  "        url: pm.collectionVariables.get(\"urlBase\") + \"/api/autenticacion/login\",",
+                  "        method: \"POST\",",
+                  "        header: { \"Content-Type\": \"application/json\", \"X-Forwarded-For\": IP },",
+                  "        body: { mode: \"raw\", raw: JSON.stringify({ nombreUsuario: usuario, contrasena: clave }) }",
+                  "    }, function (err, res) {",
+                  "        codigos.push(err ? 0 : res.code);",
+                  "        enviarSerie(lista.slice(1), alTerminar, codigos);",
+                  "    });",
+                  "}",
+                  "",
+                  "const malas = Array.from({ length: 5 }, () => [\"julian.tecnico\", \"clave-mala\"]);",
+                  "enviarSerie(malas, function (codigos) {",
+                  "    pm.collectionVariables.set(\"codigosPrevios\", JSON.stringify(codigos));",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Los intentos 1 a 5 respondieron 401\", function () {",
+                  "    pm.expect(JSON.parse(pm.collectionVariables.get(\"codigosPrevios\"))).to.eql([401, 401, 401, 401, 401]);",
+                  "});",
+                  "pm.test(\"El sexto intento responde 429 Too Many Requests\", function () {",
+                  "    pm.response.to.have.status(429);",
+                  "});",
+                  "pm.test(\"El mensaje explica cuánto esperar\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.match(/Demasiados intentos fallidos\\. Espere \\d+ minutos/);",
+                  "});",
+                  "pm.test(\"Trae la cabecera Retry-After en segundos\", function () {",
+                  "    const s = Number(pm.response.headers.get(\"Retry-After\"));",
+                  "    pm.expect(s).to.be.above(0).and.to.be.at.most(900);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-NF02-02 Con el usuario bloqueado, la contraseña correcta también espera",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-For",
+                "value": "203.0.113.50",
+                "description": "Simula un cliente con otra IP detrás del proxy"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/login",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "login"
+              ]
+            },
+            "description": "Mientras dura el bloqueo no se revisa la contraseña, así no se puede seguir adivinando.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"julian.tecnico\",\n  \"contrasena\": \"Tecnico2026*\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 429 aunque la contraseña sea correcta\", function () {",
+                  "    pm.response.to.have.status(429);",
+                  "});",
+                  "pm.test(\"No entrega token\", function () {",
+                  "    pm.expect(pm.response.json().token).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-NF02-03 Otro usuario desde la misma IP no se ve afectado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-For",
+                "value": "203.0.113.50",
+                "description": "Simula un cliente con otra IP detrás del proxy"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/login",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "login"
+              ]
+            },
+            "description": "El bloqueo es por IP y usuario, así que ana.gomez entra normal desde la misma IP.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"ana.gomez\",\n  \"contrasena\": \"Usuario2026*\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Devuelve el token\", function () {",
+                  "    pm.expect(pm.response.json().token.split(\".\")).to.have.lengthOf(3);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-NF02-04 Un inicio de sesión correcto reinicia el contador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-For",
+                "value": "203.0.113.60",
+                "description": "Simula un cliente con otra IP detrás del proxy"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/autenticacion/login",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "login"
+              ]
+            },
+            "description": "El script previo hace 4 fallos, 1 acierto y otros 4 fallos (8 fallos en total). Si el acierto no reiniciara el contador, esta petición respondería 429.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"carlos.perez\",\n  \"contrasena\": \"Usuario2026*\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const IP = \"203.0.113.60\";",
+                  "",
+                  "// Envía en serie los inicios de sesión de la lista y guarda los códigos obtenidos.",
+                  "function enviarSerie(lista, alTerminar, codigos = []) {",
+                  "    if (lista.length === 0) return alTerminar(codigos);",
+                  "    const [usuario, clave] = lista[0];",
+                  "    pm.sendRequest({",
+                  "        url: pm.collectionVariables.get(\"urlBase\") + \"/api/autenticacion/login\",",
+                  "        method: \"POST\",",
+                  "        header: { \"Content-Type\": \"application/json\", \"X-Forwarded-For\": IP },",
+                  "        body: { mode: \"raw\", raw: JSON.stringify({ nombreUsuario: usuario, contrasena: clave }) }",
+                  "    }, function (err, res) {",
+                  "        codigos.push(err ? 0 : res.code);",
+                  "        enviarSerie(lista.slice(1), alTerminar, codigos);",
+                  "    });",
+                  "}",
+                  "",
+                  "const mala = [\"carlos.perez\", \"clave-mala\"], buena = [\"carlos.perez\", \"Usuario2026*\"];",
+                  "enviarSerie([mala, mala, mala, mala, buena, mala, mala, mala, mala], function (codigos) {",
+                  "    pm.collectionVariables.set(\"codigosPrevios\", JSON.stringify(codigos));",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Las peticiones previas fueron 4 × 401, 200 y 4 × 401\", function () {",
+                  "    pm.expect(JSON.parse(pm.collectionVariables.get(\"codigosPrevios\"))).to.eql([401, 401, 401, 401, 200, 401, 401, 401, 401]);",
+                  "});",
+                  "pm.test(\"El inicio de sesión correcto responde 200 y no 429\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-NF03-01 El administrador sella la bitácora del día",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/bitacora/sellos",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "bitacora",
+                "sellos"
+              ]
+            },
+            "description": "Crea el sello SHA-256 de los movimientos de hoy, encadenado con el sello anterior.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"El hash tiene 64 caracteres hexadecimales\", function () {",
+                  "    pm.expect(pm.response.json().sello.hash).to.match(/^[0-9a-f]{64}$/);",
+                  "});",
+                  "pm.test(\"Registra cuántos movimientos quedaron sellados\", function () {",
+                  "    pm.expect(pm.response.json().sello.total_movimientos).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-NF03-02 Sin cambios, la verificación responde «íntegra»",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/bitacora/verificacion",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "bitacora",
+                "verificacion"
+              ]
+            },
+            "description": "Recalcula la cadena de sellos. La alteración directa en la base de datos se prueba en PS-14 (node:test), porque desde Postman no se puede tocar la base de datos."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"El estado es íntegra\", function () {",
+                  "    pm.expect(pm.response.json().estado).to.eql(\"íntegra\");",
+                  "});",
+                  "pm.test(\"No hay fechas alteradas\", function () {",
+                  "    pm.expect(pm.response.json().alteradas).to.eql([]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-NF03-03 Un técnico no puede verificar la bitácora",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTecnico}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/bitacora/verificacion",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "bitacora",
+                "verificacion"
+              ]
+            },
+            "description": "Solo el administrador consulta los sellos."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"El mensaje indica el rol requerido\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"administrador\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CP-NF03-04 Sellar dos veces el mismo día responde 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{urlBase}}/api/bitacora/sellos",
+              "host": [
+                "{{urlBase}}"
+              ],
+              "path": [
+                "api",
+                "bitacora",
+                "sellos"
+              ]
+            },
+            "description": "Un día sellado no se vuelve a sellar; si se pudiera, se podría tapar una alteración.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 409 Conflict\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "pm.test(\"El mensaje dice que el día ya tiene sello\", function () {",
+                  "    pm.expect(pm.response.json().mensaje).to.include(\"ya tiene sello\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [
@@ -3570,6 +4105,11 @@
     },
     {
       "key": "idSolicitud",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "codigosPrevios",
       "value": "",
       "type": "string"
     }

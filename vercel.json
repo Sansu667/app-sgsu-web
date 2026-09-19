@@ -5,7 +5,7 @@
   "outputDirectory": "dist",
   "functions": {
     "api/index.js": {
-      "includeFiles": "documentacion/**"
+      "includeFiles": "{documentacion/**,servidor/utilidades/trabajadorContrasenas.js}"
     }
   },
   "rewrites": [
